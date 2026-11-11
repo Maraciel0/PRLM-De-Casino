@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+body { @apply bg-neutral-950 text-neutral-100 antialiased; font-family: ui-sans-serif, system-ui, sans-serif; }
+header { @apply flex items-center justify-between border-b border-neutral-800 px-6 py-3 text-sm; }
+nav { @apply flex gap-4 text-neutral-400; }
+nav a:hover { @apply text-neutral-100; }
+main { @apply mx-auto max-w-3xl px-6 py-8; }
+.card { @apply rounded-xl border border-neutral-800 bg-neutral-900/40 p-5; }
+button { @apply rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-950 disabled:opacity-40; }
+button.ghost { @apply bg-neutral-800 text-neutral-200; }
+button.danger { @apply bg-red-500 text-white; }
+input, select { @apply w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm; }
+.mono { @apply font-mono text-xs break-all; }
+.pill { @apply rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300; }
