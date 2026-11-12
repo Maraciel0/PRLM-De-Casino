@@ -1,0 +1,14 @@
+name: reconcile
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit reconcile endpoint
+        run: |
+          curl -fsS "${{ secrets.APP_URL }}/api/cron/reconcile" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
