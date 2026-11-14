@@ -8,9 +8,11 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
     "skipLibCheck": true,
+    "baseUrl": ".",
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./*"] }
   },
