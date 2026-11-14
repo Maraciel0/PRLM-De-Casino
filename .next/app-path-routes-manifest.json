@@ -1,0 +1,13 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/fair/page": "/fair",
+  "/games/dice/page": "/games/dice",
+  "/games/page": "/games",
+  "/link/page": "/link",
+  "/page": "/",
+  "/wallet/page": "/wallet",
+  "/admin/page": "/admin",
+  "/admin/deposits/page": "/admin/deposits",
+  "/admin/withdrawals/page": "/admin/withdrawals",
+  "/admin/settings/page": "/admin/settings"
+}

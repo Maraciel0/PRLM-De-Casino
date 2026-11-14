@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/games/layout,_N_T_/games/dice/layout,_N_T_/games/dice/page,_N_T_/games/dice"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/935fb2d9294baf2445f25d6f88d668cbeb6136791a7a71eb7dd6d1486fb84875/$/games/dice",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/games/dice/page"
+    },
+    "isFallback": false
+  }
+}

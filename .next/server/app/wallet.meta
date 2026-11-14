@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/wallet/layout,_N_T_/wallet/page,_N_T_/wallet"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/0599ec3fe691b004ac3f2f4fa19796d471db98ae9d379eb4978b3dcc9b8114ae/$/wallet",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/wallet/page"
+    },
+    "isFallback": false
+  }
+}

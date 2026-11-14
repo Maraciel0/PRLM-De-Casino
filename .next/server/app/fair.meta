@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/fair/layout,_N_T_/fair/page,_N_T_/fair"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/8830b0488128d3c899c78076a88ab63ea3cb6b8967f84065dc746e9b871d8729/$/fair",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/fair/page"
+    },
+    "isFallback": false
+  }
+}
