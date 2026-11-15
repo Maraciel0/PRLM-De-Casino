@@ -38,12 +38,17 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
     if (existing) {
       await db.update(users).set({ linkCode: code, linkCodeExpiresAt: exp, handle: h }).where(eq(users.id, existing.id));
     } else {
-      const seed = newSeed();
-      const [u] = await db.insert(users)
-        .values({ linkCode: code, linkCodeExpiresAt: exp, handle: h, serverSeed: seed, serverSeedHash: hashSeed(seed) })
-        .returning({ id: users.id });
-      await db.insert(wallets).values({ userId: u.id }).onConflictDoNothing();
-    }
+      const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.handle, h)).limit(1);
+      if (existingUser) {
+        await db.update(users).set({ linkCode: code, linkCodeExpiresAt: exp }).where(eq(users.id, existingUser.id));
+      } else {
+        const seed = newSeed();
+        const [u] = await db.insert(users)
+          .values({ linkCode: code, linkCodeExpiresAt: exp, handle: h, serverSeed: seed, serverSeedHash: hashSeed(seed) })
+          .returning({ id: users.id });
+        await db.insert(wallets).values({ userId: u.id }).onConflictDoNothing();
+      }
+    }  
     return json({ code });
   }
 
