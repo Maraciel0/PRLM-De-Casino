@@ -8,6 +8,7 @@ export function parseAmount(v: string): number {
 }
 
 export function formatAmount(units: number): string {
+  if (!Number.isFinite(units)) return "0";
   const w = Math.trunc(units / SCALE);
   const f = String(Math.abs(units % SCALE)).padStart(4, "0").replace(/0+$/, "");
   return `${w < 0 ? "-" : ""}${Math.abs(w)}${f ? "." + f : ""}`;
