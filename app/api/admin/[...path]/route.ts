@@ -38,12 +38,17 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   if (seg[0] === "settings") return json({ settings: await getSettings() });
 
   if (seg[0] === "stats") {
-    const [s, liab] = await Promise.all([getSettings(), getLiability()]);
-    const solvency = s.bankroll - liab.total;
+    const [s, t, l] = await Promise.all([getSettings(), getTreasury(), getLiability()]);
+    const profit = t - l.total;
     return json({
-      liability: liab, bankroll: s.bankroll, solvency,
-      solvencyPct: s.bankroll ? Math.round((solvency / s.bankroll) * 100) : 0,
-      stopLoss: s.stopLossLiability, paused: s.paused,
+      treasury: t,
+      owed: l.owed,
+      held: l.held,
+      profit,
+      shortfall: Math.max(0, l.total - t),
+      stopLoss: s.stopLossLiability,
+      bankroll: s.bankroll,
+      paused: s.paused,
     });
   }
 
