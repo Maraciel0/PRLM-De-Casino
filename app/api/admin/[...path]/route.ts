@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { transfers, users, audit } from "@/lib/db/schema";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { requireOperator, assertCsrf } from "@/lib/auth";
-import { getLiability } from "@/lib/liability";
+import { getLiability, getTreasury } from "@/lib/liability";
 import { getSettings, updateSettings } from "@/lib/settings";
 import { settingsInput } from "@/lib/validation";
 import { applyDelta } from "@/lib/wallet";
