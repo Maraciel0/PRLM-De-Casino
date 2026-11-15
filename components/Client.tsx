@@ -20,7 +20,7 @@ export function useSession() {
     { loading: true, user: null, balance: 0 });
   useEffect(() => {
     api<{ user: { handle: string | null; role: string; linked: boolean } | null; balance: number }>("/api/auth/session")
-      .then((d) => setS({ loading: false, user: d.user, balance: d.balance }))
+      .then((d) => setS({ loading: false, user: d.user, balance: d.balance ?? 0 }))
       .catch(() => setS({ loading: false, user: null, balance: 0 }));
   }, []);
   return s;
