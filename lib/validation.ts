@@ -32,3 +32,20 @@ export const settingsInput = z.object({
   paused: z.boolean().optional(),
   payoutSlaMinutes: z.number().int().min(5).max(1440).optional(),
 });
+
+export const signupInput = z.object({
+  username: handle,
+  password: z.string().min(10).max(200),
+});
+
+export const loginInput = z.object({
+  username: handle,
+  password: z.string().min(1).max(200),
+});
+
+export const passwordInput = z.object({
+  current: z.string().min(1),
+  next: z.string().min(10).max(200),
+});
+
+export const announcementInput = z.object({ body: z.string().trim().min(1).max(2000) });
