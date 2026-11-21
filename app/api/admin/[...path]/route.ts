@@ -122,6 +122,10 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
     await db.insert(audit).values({ operatorId: op.id, action: "withdraw.paid", target: t.id, detail: { amount: t.amount } });
     return json({ ok: true });
   }
-
+    if (seg[0] === "announcements") {
+    const { body: text } = announcementInput.parse(await req.json());
+    const [row] = await db.insert(announcements).values({ body: text }).returning();
+    return json({ row });
+  }
   return fail(404, "Not found");
 });
