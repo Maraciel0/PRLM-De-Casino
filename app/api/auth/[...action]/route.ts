@@ -1,14 +1,18 @@
 import { db } from "@/lib/db";
 import { users, wallets } from "@/lib/db/schema";
-import { and, eq, gt } from "drizzle-orm";
-import { getUser, createSession, destroySession } from "@/lib/auth";
+import { eq } from "drizzle-orm";
+import { getUser, createSession, destroySession, requireUser } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { newSeed, hashSeed } from "@/lib/fair";
-import { handle as handleSchema } from "@/lib/validation";
+import { signupInput, loginInput, passwordInput } from "@/lib/validation";
+import { refCode } from "@/lib/ref";
 import { route, json, fail } from "@/lib/http";
 import { limit, ip } from "@/lib/rate-limit";
 
 type Ctx = { params: Promise<{ action: string[] }> };
 export const dynamic = "force-dynamic";
+
+const ops = () => (process.env.OPERATOR_HANDLES ?? "").split(",").map((s) => s.trim().toLowerCase());
 
 export const GET = route(async (_req: Request, ctx: Ctx) => {
   const [a] = (await ctx.params).action;
@@ -28,46 +32,47 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
     return json({ ok: true });
   }
 
-  if (key === "link/start") {
-    if (!limit(`ls:${ip(req)}`, 10, 60_000)) return fail(429, "Slow down");
-    const h = handleSchema.parse((await req.json()).handle);
-    const code = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
-    const exp = new Date(Date.now() + 15 * 60_000);
-    const existing = await getUser();
+  if (key === "signup") {
+    if (!limit(`su:${ip(req)}`, 5, 600_000)) return fail(429, "Slow down");
+    const { username, password } = signupInput.parse(await req.json());
 
-    if (existing) {
-      await db.update(users).set({ linkCode: code, linkCodeExpiresAt: exp, handle: h }).where(eq(users.id, existing.id));
-    } else {
-      const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.handle, h)).limit(1);
-      if (existingUser) {
-        await db.update(users).set({ linkCode: code, linkCodeExpiresAt: exp }).where(eq(users.id, existingUser.id));
-      } else {
-        const seed = newSeed();
-        const [u] = await db.insert(users)
-          .values({ linkCode: code, linkCodeExpiresAt: exp, handle: h, serverSeed: seed, serverSeedHash: hashSeed(seed) })
-          .returning({ id: users.id });
-        await db.insert(wallets).values({ userId: u.id }).onConflictDoNothing();
-      }
-    }  
-    return json({ code });
+    const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.handle, username)).limit(1);
+    if (taken) return fail(409, "That username is taken");
+
+    const seed = newSeed();
+    const [u] = await db.insert(users).values({
+      handle: username,
+      passwordHash: hashPassword(password),
+      profileCode: refCode("USR"),
+      linkedAt: new Date(),
+      role: ops().includes(username.toLowerCase()) ? "operator" : "player",
+      serverSeed: seed,
+      serverSeedHash: hashSeed(seed),
+    }).returning({ id: users.id });
+
+    await db.insert(wallets).values({ userId: u.id }).onConflictDoNothing();
+    await createSession(u.id);
+    return json({ ok: true });
   }
 
-  if (key === "link/verify") {
-    const body = await req.json();
-    const code = String(body.code ?? "").toUpperCase();
-    const h = String(body.handle ?? "");
+  if (key === "login") {
+    if (!limit(`li:${ip(req)}`, 10, 300_000)) return fail(429, "Slow down");
+    const { username, password } = loginInput.parse(await req.json());
 
-    const [pending] = await db.select().from(users)
-      .where(and(eq(users.linkCode, code), gt(users.linkCodeExpiresAt, new Date()))).limit(1);
-    if (!pending) return fail(400, "Code invalid or expired");
+    const [u] = await db.select().from(users).where(eq(users.handle, username)).limit(1);
+    if (!u?.passwordHash || !verifyPassword(password, u.passwordHash)) {
+      return fail(401, "Wrong username or password");
+    }
+    await createSession(u.id);
+    return json({ ok: true });
+  }
 
-    const ops = (process.env.OPERATOR_HANDLES ?? "").split(",").map((s) => s.trim().toLowerCase());
-    await db.update(users).set({
-      handle: h, linkedAt: new Date(), linkCode: null, linkCodeExpiresAt: null,
-      role: ops.includes(h.toLowerCase()) ? "operator" : "player",
-    }).where(eq(users.id, pending.id));
-    await db.insert(wallets).values({ userId: pending.id }).onConflictDoNothing();
-    await createSession(pending.id);
+  if (key === "password") {
+    const me = await requireUser();
+    const { current, next } = passwordInput.parse(await req.json());
+    const [u] = await db.select({ h: users.passwordHash }).from(users).where(eq(users.id, me.id)).limit(1);
+    if (!u?.h || !verifyPassword(current, u.h)) return fail(401, "Current password is wrong");
+    await db.update(users).set({ passwordHash: hashPassword(next) }).where(eq(users.id, me.id));
     return json({ ok: true });
   }
 
