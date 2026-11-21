@@ -36,7 +36,10 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   }
 
   if (seg[0] === "settings") return json({ settings: await getSettings() });
-
+  
+  if (seg[0] === "announcements") return json({ rows: await getAllAnnouncements() });
+  if (seg[0] === "content") return json({ text: await getSiteText() });
+  
   if (seg[0] === "stats") {
     const [s, t, l] = await Promise.all([getSettings(), getTreasury(), getLiability()]);
     const profit = t - l.total;
