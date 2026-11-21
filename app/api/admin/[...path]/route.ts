@@ -28,10 +28,11 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
     return json({ rows });
   }
   
-  if (seg[0] === "withdrawals") {
+ if (seg[0] === "withdrawals") {
     const rows = await db.select({
       id: transfers.id, amount: transfers.amount, refCode: transfers.refCode,
-      status: transfers.status, createdAt: transfers.createdAt, handle: users.handle,
+      status: transfers.status, createdAt: transfers.createdAt,
+      handle: users.handle, profileCode: users.profileCode,
     }).from(transfers).innerJoin(users, eq(users.id, transfers.userId))
       .where(and(eq(transfers.direction, "withdraw"), inArray(transfers.status, ["held", "awaiting_operator"])))
       .orderBy(asc(transfers.createdAt)).limit(100);
