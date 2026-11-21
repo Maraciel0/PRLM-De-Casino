@@ -1,22 +1,15 @@
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-4">
-      <nav className="flex gap-3 text-sm text-neutral-400">
-        <a href="/admin">Overview</a>
+      <nav className="flex flex-wrap gap-3 text-sm text-neutral-400">
+        <a href="/admin">Treasury</a>
         <a href="/admin/deposits">Deposits</a>
         <a href="/admin/withdrawals">Withdrawals</a>
+        <a href="/admin/announcements">Notices</a>
+        <a href="/admin/content">Page text</a>
         <a href="/admin/settings">Settings</a>
       </nav>
       {children}
     </div>
   );
 }
-
-<nav className="flex gap-3 text-sm text-neutral-400">
-  <a href="/admin">Treasury</a>
-  <a href="/admin/deposits">Deposits</a>
-  <a href="/admin/withdrawals">Withdrawals</a>
-  <a href="/admin/announcements">Notices</a>
-  <a href="/admin/content">Page text</a>
-  <a href="/admin/settings">Settings</a>
-</nav>
