@@ -6,13 +6,21 @@ export default function Page() {
   const [text, setText] = useState<Record<string, string> | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  useEffect(() => { api<{ text: Record<string, string> }>("/api/admin/content").then((d) => setText(d.text)).catch(() => {}); }, []);
+  useEffect(() => {
+    api<{ text: Record<string, string> }>("/api/admin/content")
+      .then((d) => setText(d.text))
+      .catch((e) => setMsg((e as Error).message));
+  }, []);
 
-  if (!text) return <p className="text-neutral-500">Operator access required.</p>;
+  if (!text) return <p className="text-neutral-500">{msg ?? "Loading…"}</p>;
 
   return (
     <div className="card space-y-3">
       <h1 className="text-lg font-semibold">Landing page text</h1>
+      <p className="text-sm text-neutral-500">
+        The key on the left is where the text appears. Edit the box, then Save all.
+      </p>
+
       {Object.entries(text).map(([k, v]) => (
         <label key={k} className="block text-sm">
           <span className="text-neutral-500">{k}</span>
@@ -24,10 +32,15 @@ export default function Page() {
           />
         </label>
       ))}
+
       <button onClick={async () => {
         setMsg(null);
-        try { await api("/api/admin/content", { method: "PATCH", body: JSON.stringify(text) }); setMsg("Saved."); }
-        catch (e) { setMsg((e as Error).message); }
+        try {
+          await api("/api/admin/content", { method: "PATCH", body: JSON.stringify(text) });
+          setMsg("Saved.");
+        } catch (e) {
+          setMsg((e as Error).message);
+        }
       }}>Save all</button>
       {msg && <p className="text-sm text-amber-400">{msg}</p>}
     </div>
