@@ -17,16 +17,17 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   await requireOperator();
   const seg = (await ctx.params).path;
 
-  if (seg[0] === "deposits") {
+ if (seg[0] === "deposits") {
     const rows = await db.select({
       id: transfers.id, amount: transfers.amount, refCode: transfers.refCode,
-      gameTxId: transfers.gameTxId, createdAt: transfers.createdAt, handle: users.handle,
+      gameTxId: transfers.gameTxId, createdAt: transfers.createdAt,
+      handle: users.handle, profileCode: users.profileCode,
     }).from(transfers).innerJoin(users, eq(users.id, transfers.userId))
       .where(and(eq(transfers.direction, "deposit"), eq(transfers.status, "awaiting_operator")))
       .orderBy(asc(transfers.createdAt)).limit(100);
     return json({ rows });
   }
-
+  
   if (seg[0] === "withdrawals") {
     const rows = await db.select({
       id: transfers.id, amount: transfers.amount, refCode: transfers.refCode,
