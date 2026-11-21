@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { transfers, users, audit, announcements, siteText } from "@/lib/db/schema";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { requireOperator, assertCsrf } from "@/lib/auth";
 import { getLiability, getTreasury } from "@/lib/liability";
 import { getSettings, updateSettings } from "@/lib/settings";
@@ -17,7 +17,7 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   await requireOperator();
   const seg = (await ctx.params).path;
 
- if (seg[0] === "deposits") {
+  if (seg[0] === "deposits") {
     const rows = await db.select({
       id: transfers.id, amount: transfers.amount, refCode: transfers.refCode,
       gameTxId: transfers.gameTxId, createdAt: transfers.createdAt,
@@ -27,8 +27,8 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
       .orderBy(asc(transfers.createdAt)).limit(100);
     return json({ rows });
   }
-  
- if (seg[0] === "withdrawals") {
+
+  if (seg[0] === "withdrawals") {
     const rows = await db.select({
       id: transfers.id, amount: transfers.amount, refCode: transfers.refCode,
       status: transfers.status, createdAt: transfers.createdAt,
@@ -40,10 +40,11 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   }
 
   if (seg[0] === "settings") return json({ settings: await getSettings() });
-  
+
   if (seg[0] === "announcements") return json({ rows: await getAllAnnouncements() });
+
   if (seg[0] === "content") return json({ text: await getSiteText() });
-  
+
   if (seg[0] === "stats") {
     const [s, t, l] = await Promise.all([getSettings(), getTreasury(), getLiability()]);
     const profit = t - l.total;
@@ -66,19 +67,28 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   await assertCsrf(req);
   await requireOperator();
   const seg = (await ctx.params).path;
-  if (seg[0] !== "settings") return fail(404, "Not found");
-  await updateSettings(settingsInput.parse(await req.json()));
-  return json({ settings: await getSettings() });
+
+  if (seg[0] === "settings") {
+    await updateSettings(settingsInput.parse(await req.json()));
+    return json({ settings: await getSettings() });
+  }
+
   if (seg[0] === "announcements") {
-  const { id, active } = await req.json();
-  await db.update(announcements).set({ active }).where(eq(announcements.id, id));
-  return json({ ok: true });
+    const { id, active } = await req.json();
+    await db.update(announcements).set({ active: Boolean(active) }).where(eq(announcements.id, id));
+    return json({ ok: true });
+  }
+
   if (seg[0] === "content") {
-  const body = (await req.json()) as Record<string, string>;
-  for (const [k, v] of Object.entries(body)) {
-    await db.insert(siteText).values({ key: k, value: v })
-      .onConflictDoUpdate({ target: siteText.key, set: { value: v } });
-  return json({ ok: true });
+    const body = (await req.json()) as Record<string, string>;
+    for (const [k, v] of Object.entries(body)) {
+      await db.insert(siteText).values({ key: k, value: String(v) })
+        .onConflictDoUpdate({ target: siteText.key, set: { value: String(v) } });
+    }
+    return json({ ok: true });
+  }
+
+  return fail(404, "Not found");
 });
 
 export const POST = route(async (req: Request, ctx: Ctx) => {
@@ -87,7 +97,6 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
   const seg = (await ctx.params).path;
   const body = await req.json().catch(() => ({}));
 
-  // deposits/:id/confirm
   if (seg[0] === "deposits" && seg[2] === "confirm") {
     const [t] = await db.select().from(transfers).where(eq(transfers.id, seg[1])).limit(1);
     if (!t || t.status !== "awaiting_operator") return fail(409, "Not pending");
@@ -106,7 +115,6 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
     return json({ ok: true });
   }
 
-  // withdrawals/:id/paid
   if (seg[0] === "withdrawals" && seg[2] === "paid") {
     const [t] = await db.select().from(transfers).where(eq(transfers.id, seg[1])).limit(1);
     if (!t || !["held", "awaiting_operator"].includes(t.status)) return fail(409, "Not pending");
@@ -126,19 +134,23 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
     await db.insert(audit).values({ operatorId: op.id, action: "withdraw.paid", target: t.id, detail: { amount: t.amount } });
     return json({ ok: true });
   }
-    if (seg[0] === "announcements") {
-    const { body: text } = announcementInput.parse(await req.json());
+
+  if (seg[0] === "announcements") {
+    const { body: text } = announcementInput.parse(body);
     const [row] = await db.insert(announcements).values({ body: text }).returning();
     return json({ row });
   }
+
   return fail(404, "Not found");
 });
 
-    export const DELETE = route(async (req: Request, ctx: Ctx) => {
+export const DELETE = route(async (req: Request, ctx: Ctx) => {
   await assertCsrf(req);
   await requireOperator();
   const seg = (await ctx.params).path;
+
   if (seg[0] !== "announcements") return fail(404, "Not found");
+
   const { id } = await req.json();
   await db.delete(announcements).where(eq(announcements.id, id));
   return json({ ok: true });
