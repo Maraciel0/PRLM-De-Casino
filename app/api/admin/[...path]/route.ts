@@ -129,3 +129,13 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
   }
   return fail(404, "Not found");
 });
+
+    export const DELETE = route(async (req: Request, ctx: Ctx) => {
+  await assertCsrf(req);
+  await requireOperator();
+  const seg = (await ctx.params).path;
+  if (seg[0] !== "announcements") return fail(404, "Not found");
+  const { id } = await req.json();
+  await db.delete(announcements).where(eq(announcements.id, id));
+  return json({ ok: true });
+});
