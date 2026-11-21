@@ -65,6 +65,16 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   if (seg[0] !== "settings") return fail(404, "Not found");
   await updateSettings(settingsInput.parse(await req.json()));
   return json({ settings: await getSettings() });
+  if (seg[0] === "announcements") {
+  const { id, active } = await req.json();
+  await db.update(announcements).set({ active }).where(eq(announcements.id, id));
+  return json({ ok: true });
+  if (seg[0] === "content") {
+  const body = (await req.json()) as Record<string, string>;
+  for (const [k, v] of Object.entries(body)) {
+    await db.insert(siteText).values({ key: k, value: v })
+      .onConflictDoUpdate({ target: siteText.key, set: { value: v } });
+  return json({ ok: true });
 });
 
 export const POST = route(async (req: Request, ctx: Ctx) => {
