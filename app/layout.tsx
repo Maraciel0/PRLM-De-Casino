@@ -1,8 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
+import Nav from "@/components/Nav";
 
-export const metadata: Metadata = { title: "The House", description: "Parlamentum casino" };
+export const metadata: Metadata = { title: "The House", description: "Parlamentum dice hall" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,15 +10,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header>
           <a href="/" className="font-semibold">THE HOUSE</a>
-          <nav>
-            <a href="/games">Games</a>
-            <a href="/wallet">Wallet</a>
-            <a href="/fair">Fairness</a>
-            <a href="/admin">Admin</a>
-          </nav>
+          <Nav />
         </header>
         <main>{children}</main>
-        <Analytics />
       </body>
     </html>
   );
