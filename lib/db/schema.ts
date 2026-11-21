@@ -22,6 +22,8 @@ export const users = pgTable("users", {
   nonce: integer("nonce").notNull().default(0),
   revealedSeeds: jsonb("revealed_seeds").notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  passwordHash: text("password_hash"),
+  profileCode: text("profile_code").unique(),
 });
 
 export const settings = pgTable("settings", {
