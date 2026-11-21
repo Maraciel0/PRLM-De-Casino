@@ -26,6 +26,18 @@ export const users = pgTable("users", {
   profileCode: text("profile_code").unique(),
 });
 
+export const announcements = pgTable("announcements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  body: text("body").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const siteText = pgTable("site_text", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey().default(1),
   houseEdgeBps: integer("house_edge_bps").notNull().default(300),
