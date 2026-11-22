@@ -8,28 +8,60 @@ type GuessRes = {
   guessesLeft: number; payout: number; status: string; balance: number;
 };
 
-const SHUFFLE_MS = 700;
-const randomTransform = () => ({
-  transform: `translate(${(Math.random() - 0.5) * 140}px, ${(Math.random() - 0.5) * 80}px) rotate(${(Math.random() - 0.5) * 50}deg)`,
+const HOLD_MS = 2600;
+const SHUFFLE_STEP = 700;
+const SHUFFLE_ROUNDS = 3;
+const FLIP_GAP_MS = 400;
+const FLIP_BACK_MS = 1200;
+const SIZE = 10;
+
+const identity = () => Array.from({ length: SIZE }, (_, i) => i);
+const position = (slot: number) => ({
+  left: `${(slot % 5) * 20 + 1}%`,
+  top: `${Math.floor(slot / 5) * 50 + 2}%`,
 });
+const tilt = (id: number) => ((id * 37) % 11) - 5;
 
 export default function Memory() {
   const { text } = useSession();
   const [phase, setPhase] = useState<"idle" | "preview" | "shuffling" | "playing" | "done">("idle");
   const [roundId, setRoundId] = useState<string | null>(null);
   const [cards, setCards] = useState<number[]>([]);
+  const [slots, setSlots] = useState<number[]>(identity());
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [pending, setPending] = useState<number[]>([]);
-  const [offsets, setOffsets] = useState<Record<number, React.CSSProperties>>({});
   const [guessesLeft, setGuessesLeft] = useState(0);
   const [pairsFound, setPairsFound] = useState(0);
   const [payout, setPayout] = useState(0);
   const [err, setErr] = useState<string | null>(null);
 
-  function scatter() {
-    const next: Record<number, React.CSSProperties> = {};
-    for (let i = 0; i < 10; i++) next[i] = randomTransform();
-    setOffsets(next);
+  function permute() {
+    setSlots((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      return next;
+    });
+  }
+
+  function runShuffle(done: () => void) {
+    setPhase("shuffling");
+    let round = 0;
+    const step = () => {
+      permute();
+      round++;
+      if (round < SHUFFLE_ROUNDS) {
+        setTimeout(step, SHUFFLE_STEP);
+      } else {
+        setTimeout(() => {
+          setPhase("playing");
+          done();
+        }, SHUFFLE_STEP);
+      }
+    };
+    setTimeout(step, SHUFFLE_STEP);
   }
 
   async function start() {
@@ -40,22 +72,15 @@ export default function Memory() {
       );
       setRoundId(r.round.id);
       setCards(r.round.deck);
+      setSlots(identity());
       setRevealed(new Set());
       setPending([]);
-      setOffsets({});
       setGuessesLeft(r.round.guessesLeft);
       setPairsFound(0);
       setPayout(0);
       setPhase("preview");
 
-      setTimeout(() => {
-        scatter();
-        setTimeout(() => {
-          setPhase("shuffling");
-          setOffsets({});
-          setTimeout(() => setPhase("playing"), SHUFFLE_MS);
-        }, SHUFFLE_MS);
-      }, 1400);
+      setTimeout(() => runShuffle(() => {}), HOLD_MS);
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -74,7 +99,7 @@ export default function Memory() {
         setRevealed((p) => new Set([...p, a, b]));
         setPending([]);
       } else {
-        setTimeout(() => setPending([]), 900);
+        setTimeout(() => setPending([]), FLIP_BACK_MS);
       }
 
       if (r.status !== "active") setPhase("done");
@@ -84,15 +109,22 @@ export default function Memory() {
     }
   }
 
-  function flip(i: number) {
-    if (phase !== "playing" || revealed.has(i) || pending.includes(i) || pending.length === 2) return;
-    const next = [...pending, i];
-    setPending(next);
-    if (next.length === 2) resolve(next[0], next[1]);
+  function flip(id: number) {
+    if (phase !== "playing" || revealed.has(id) || pending.includes(id) || pending.length === 2) return;
+    if (pending.length === 0) {
+      setPending([id]);
+      return;
+    }
+    const first = pending[0];
+    setPending([first, id]);
+    setTimeout(() => resolve(first, id), FLIP_GAP_MS);
   }
 
-  const faceUp = (i: number) => phase === "preview" || revealed.has(i) || pending.includes(i);
-  const deckSize = cards.length || 10;
+  const faceUp = (id: number) =>
+    phase === "preview" || phase === "shuffling" || revealed.has(id) || pending.includes(id);
+
+  const deck = cards.length ? cards : Array.from({ length: SIZE }, (_, i) => i);
+  const pairs = deck.length / 2;
 
   return (
     <div className="space-y-4">
@@ -103,7 +135,7 @@ export default function Memory() {
         </div>
         <p className="text-sm text-neutral-400">{text.memoryIntro ?? ""}</p>
         <p className="text-sm text-neutral-500">
-          {text.memoryPairs ?? "Pairs"} {pairsFound}/{deckSize / 2} ·{" "}
+          {text.memoryPairs ?? "Pairs"} {pairsFound}/{pairs} ·{" "}
           {text.memoryGuessesLeft ?? "Guesses left"} {guessesLeft} ·{" "}
           {text.memoryWon ?? "Won"} {formatAmount(payout)}
         </p>
@@ -113,8 +145,8 @@ export default function Memory() {
         {phase === "shuffling" && <p className="text-xs text-neutral-500">Shuffling…</p>}
         {phase === "done" && (
           <>
-            <p className={`text-sm ${pairsFound >= deckSize / 2 ? "text-emerald-400" : "text-red-400"}`}>
-              {pairsFound >= deckSize / 2
+            <p className={`text-sm ${pairsFound >= pairs ? "text-emerald-400" : "text-red-400"}`}>
+              {pairsFound >= pairs
                 ? (text.memoryWin ?? "Board cleared.")
                 : (text.memoryLose ?? "Out of guesses.")}{" "}
               {formatAmount(payout)} gold returned.
@@ -125,19 +157,22 @@ export default function Memory() {
         {err && <p className="text-sm text-red-400">{err}</p>}
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
-        {(cards.length ? cards : Array.from({ length: 10 })).map((v, i) => (
+      <div className="mboard">
+        {slots.map((id, slot) => (
           <button
-            key={i}
-            onClick={() => flip(i)}
-            disabled={phase !== "playing" || revealed.has(i) || pending.includes(i)}
-            style={offsets[i]}
-            className={`mcard ${faceUp(i) ? "face-up" : ""} ${revealed.has(i) ? "matched" : ""} ${offsets[i] ? "shuffling" : ""}`}
-            aria-label={`Card ${i + 1}`}
+            key={id}
+            onClick={() => flip(id)}
+            disabled={phase !== "playing" || revealed.has(id) || pending.includes(id)}
+            style={{
+              ...position(slot),
+              transform: phase === "shuffling" ? `rotate(${tilt(id)}deg)` : "rotate(0deg)",
+            }}
+            className={`mcard ${faceUp(id) ? "face-up" : ""} ${revealed.has(id) ? "matched" : ""}`}
+            aria-label={`Card ${id + 1}`}
           >
             <span className="mcard-inner">
               <span className="mcard-face back" style={{ backgroundImage: "url(/cards/back.png)" }} />
-              <span className="mcard-face front" style={{ backgroundImage: `url(/cards/face-${v}.png)` }} />
+              <span className="mcard-face front" style={{ backgroundImage: `url(/cards/face-${deck[id]}.png)` }} />
             </span>
           </button>
         ))}
