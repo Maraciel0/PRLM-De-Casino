@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = { title: "The Seville Casino", description: "Parlamentum Player-Run Casino" };
 
