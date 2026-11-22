@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 
-export const metadata: Metadata = { title: "The House", description: "Parlamentum dice hall" };
+export const metadata: Metadata = { title: "The Seville Casino", description: "Parlamentum Player-Run Casino" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header><Nav /></header>
         <main>{children}</main>
+        <Footer />
       </body>
     </html>
   );
