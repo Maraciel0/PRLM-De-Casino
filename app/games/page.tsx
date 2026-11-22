@@ -15,6 +15,9 @@ export default function Page() {
         <a href="/games/dice" className="card block hover:border-neutral-600">
           <h2 className="font-medium">{text.diceTitle ?? "Dice"}</h2>
         </a>
+        <a href="/games/memory" className="card block hover:border-neutral-600">
+          <h2 className="font-medium">{text.memoryTitle ?? "Memory"}</h2>
+        </a>
       )}
     </div>
   );
