@@ -49,3 +49,10 @@ export const passwordInput = z.object({
 });
 
 export const announcementInput = z.object({ body: z.string().trim().min(1).max(2000) });
+
+
+export const memoryGuessInput = z.object({
+  roundId: z.string().uuid(),
+  a: z.number().int().min(0),
+  b: z.number().int().min(0),
+});
