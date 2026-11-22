@@ -33,6 +33,18 @@ export const announcements = pgTable("announcements", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const memoryRounds = pgTable("memory_rounds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deck: jsonb("deck").notNull(),
+  revealed: jsonb("revealed").notNull().default([]),
+  guessesLeft: integer("guesses_left").notNull(),
+  pairsFound: integer("pairs_found").notNull().default(0),
+  payout: bigint("payout", { mode: "number" }).notNull().default(0),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("memory_user_idx").on(t.userId, t.createdAt)]);
+
 export const siteText = pgTable("site_text", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
