@@ -2,6 +2,13 @@ import { db } from "./db";
 import { siteText } from "./db/schema";
 
 export const DEFAULT_TEXT: Record<string, string> = {
+  brand: "The House",
+  navGames: "Games",
+  navWallet: "Wallet",
+  navProfile: "Profile",
+  navAdmin: "Admin",
+  navSignIn: "Sign in",
+
   eyebrow: "Parlamentum · gold only",
   title: "The House",
   intro: "A player-run dice hall. Deposit in-game gold, roll at published odds, withdraw whenever you like.",
@@ -18,6 +25,39 @@ export const DEFAULT_TEXT: Record<string, string> = {
   footer: "In-game gold only. No real money changes hands.",
   labelHeld: "Gold held by the house",
   labelMinBet: "Minimum bet",
+
+  homeGreeting: "Playing as",
+  homeSignOut: "Sign out",
+  homeGamesTitle: "Games",
+  homeGamesBody: "Dice, live.",
+  homeWalletTitle: "Wallet",
+  homeWalletBody: "Deposit and withdraw.",
+  homeAdminLink: "Open operator console",
+
+  walletTitle: "Wallet",
+  walletAmountPlaceholder: "Amount",
+  walletTxPlaceholder: "In-game transaction ID (deposits only)",
+  walletDeposit: "Deposit",
+  walletWithdraw: "Withdraw",
+  walletHistory: "History",
+  walletEmpty: "Nothing yet.",
+
+  gamesTitle: "Games",
+  gamesIntro: "Every table pays slightly under true odds. That margin keeps the house solvent.",
+
+  diceTitle: "Dice",
+  diceRoll: "Roll",
+  diceLastRolls: "Last rolls",
+  diceNoRolls: "No rolls yet.",
+
+  loginIntro: "Use your exact in-game name. Passwords need at least 10 characters.",
+  loginSignIn: "Sign in",
+  loginCreate: "Create account",
+
+  profileTitle: "Your account",
+  profileCodeTitle: "Verification code",
+  profileCodeBody: "Put this in your Parlamentum profile so the house can match your deposits to you.",
+  profileChangeTitle: "Change password",
 };
 
 export async function getSiteText(): Promise<Record<string, string>> {
