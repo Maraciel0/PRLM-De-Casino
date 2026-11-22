@@ -9,8 +9,9 @@ type GuessRes = {
 };
 
 const HOLD_MS = 2600;
-const SHUFFLE_STEP = 700;
-const SHUFFLE_ROUNDS = 3;
+const FLIP_DOWN_MS = 600;
+const SHUFFLE_STEP = 800;
+const SHUFFLE_ROUNDS = 4;
 const FLIP_GAP_MS = 400;
 const FLIP_BACK_MS = 1200;
 const SIZE = 10;
@@ -24,7 +25,9 @@ const tilt = (id: number) => ((id * 37) % 11) - 5;
 
 export default function Memory() {
   const { text } = useSession();
-  const [phase, setPhase] = useState<"idle" | "preview" | "shuffling" | "playing" | "done">("idle");
+  const [phase, setPhase] = useState<
+    "idle" | "preview" | "flipping" | "shuffling" | "playing" | "done"
+  >("idle");
   const [roundId, setRoundId] = useState<string | null>(null);
   const [cards, setCards] = useState<number[]>([]);
   const [slots, setSlots] = useState<number[]>(identity());
@@ -37,7 +40,8 @@ export default function Memory() {
 
   function permute() {
     setSlots((prev) => {
-      const next = [...prev];
+      // Swap the two rows so every card crosses the board, then scramble.
+      const next = [...prev.slice(5), ...prev.slice(0, 5)];
       for (let i = next.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [next[i], next[j]] = [next[j], next[i]];
@@ -61,7 +65,7 @@ export default function Memory() {
         }, SHUFFLE_STEP);
       }
     };
-    setTimeout(step, SHUFFLE_STEP);
+    step();
   }
 
   async function start() {
@@ -80,7 +84,11 @@ export default function Memory() {
       setPayout(0);
       setPhase("preview");
 
-      setTimeout(() => runShuffle(() => {}), HOLD_MS);
+      // Show the board, flip every card down, then shuffle face-down.
+      setTimeout(() => {
+        setPhase("flipping");
+        setTimeout(() => runShuffle(() => {}), FLIP_DOWN_MS);
+      }, HOLD_MS);
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -120,8 +128,7 @@ export default function Memory() {
     setTimeout(() => resolve(first, id), FLIP_GAP_MS);
   }
 
-  const faceUp = (id: number) =>
-    phase === "preview" || phase === "shuffling" || revealed.has(id) || pending.includes(id);
+  const faceUp = (id: number) => phase === "preview" || revealed.has(id) || pending.includes(id);
 
   const deck = cards.length ? cards : Array.from({ length: SIZE }, (_, i) => i);
   const pairs = deck.length / 2;
@@ -142,7 +149,9 @@ export default function Memory() {
 
         {phase === "idle" && <button onClick={start}>{text.memoryStart ?? "Start round"}</button>}
         {phase === "preview" && <p className="text-xs text-amber-400">Memorise the board…</p>}
-        {phase === "shuffling" && <p className="text-xs text-neutral-500">Shuffling…</p>}
+        {(phase === "flipping" || phase === "shuffling") && (
+          <p className="text-xs text-neutral-500">Shuffling…</p>
+        )}
         {phase === "done" && (
           <>
             <p className={`text-sm ${pairsFound >= pairs ? "text-emerald-400" : "text-red-400"}`}>
