@@ -14,13 +14,21 @@ input, select { @apply w-full rounded-lg border border-neutral-700 bg-neutral-90
 .pill { @apply rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300; }
 .mcard {
   position: relative;
+  display: block;
+  width: 100%;
   aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
   perspective: 800px;
+  cursor: pointer;
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease;
 }
+.mcard:disabled { cursor: default; }
 .mcard-inner {
   position: absolute;
   inset: 0;
+  display: block;
   transform-style: preserve-3d;
   transition: transform 0.35s ease;
 }
@@ -28,13 +36,15 @@ input, select { @apply w-full rounded-lg border border-neutral-700 bg-neutral-90
 .mcard-face {
   position: absolute;
   inset: 0;
+  display: block;
   backface-visibility: hidden;
   border-radius: 0.5rem;
-  border: 1px solid #27272a;
+  border: 1px solid #3f3f46;
+  background-color: #18181b;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
 }
-.mcard-face.back { border-color: #3f3f46; }
 .mcard-face.front { transform: rotateY(180deg); border-color: #52525b; }
 .mcard.matched { opacity: 0.45; }
 .mcard.shuffling { opacity: 0; }
