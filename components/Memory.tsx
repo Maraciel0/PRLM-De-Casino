@@ -26,11 +26,11 @@ export default function Memory() {
   const [payout, setPayout] = useState(0);
   const [err, setErr] = useState<string | null>(null);
 
-  const scatter = () => {
+  function scatter() {
     const next: Record<number, React.CSSProperties> = {};
-    for (let i = 0; i < cards.length; i++) next[i] = randomTransform();
+    for (let i = 0; i < 10; i++) next[i] = randomTransform();
     setOffsets(next);
-  };
+  }
 
   async function start() {
     setErr(null);
@@ -48,7 +48,6 @@ export default function Memory() {
       setPayout(0);
       setPhase("preview");
 
-      // Let the board deal in, then scatter and reveal the shuffled order.
       setTimeout(() => {
         scatter();
         setTimeout(() => {
@@ -63,36 +62,25 @@ export default function Memory() {
   }
 
   async function resolve(a: number, b: number) {
-    setPhase("shuffling");
-    scatter();
-    const wait = new Promise((res) => setTimeout(res, SHUFFLE_MS));
-
     try {
       const r = await api<GuessRes>("/api/games/memory/guess", {
         method: "POST", body: JSON.stringify({ roundId, a, b }),
       });
-      await wait;
-      setOffsets({});
       setGuessesLeft(r.guessesLeft);
       setPairsFound(r.pairsFound);
       setPayout(r.payout);
+
       if (r.matched) {
         setRevealed((p) => new Set([...p, a, b]));
         setPending([]);
       } else {
         setTimeout(() => setPending([]), 900);
       }
-      if (r.status !== "active") {
-        setPhase("done");
-      } else {
-        setPhase("playing");
-      }
+
+      if (r.status !== "active") setPhase("done");
     } catch (e) {
-      await wait;
-      setOffsets({});
       setErr((e as Error).message);
       setPending([]);
-      setPhase("playing");
     }
   }
 
