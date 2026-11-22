@@ -50,6 +50,16 @@ export const DEFAULT_TEXT: Record<string, string> = {
   diceLastRolls: "Last rolls",
   diceNoRolls: "No rolls yet.",
 
+  memoryTitle: "Memory",
+  memoryIntro: "Memorise the board, then match the pairs before your guesses run out.",
+  memoryStart: "Start round",
+  memoryAgain: "Play again",
+  memoryPairs: "Pairs",
+  memoryGuessesLeft: "Guesses left",
+  memoryWon: "Won",
+  memoryWin: "Board cleared.",
+  memoryLose: "Out of guesses.",
+  
   loginIntro: "Use your exact in-game name. Passwords need at least 10 characters.",
   loginSignIn: "Sign in",
   loginCreate: "Create account",
