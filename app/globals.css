@@ -12,3 +12,29 @@ button.danger { @apply bg-red-500 text-white; }
 input, select { @apply w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm; }
 .mono { @apply font-mono text-xs break-all; }
 .pill { @apply rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-300; }
+.mcard {
+  position: relative;
+  aspect-ratio: 1;
+  perspective: 800px;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease;
+}
+.mcard-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.35s ease;
+}
+.mcard.face-up .mcard-inner { transform: rotateY(180deg); }
+.mcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid #27272a;
+  background-size: cover;
+  background-position: center;
+}
+.mcard-face.back { border-color: #3f3f46; }
+.mcard-face.front { transform: rotateY(180deg); border-color: #52525b; }
+.mcard.matched { opacity: 0.45; }
+.mcard.shuffling { opacity: 0; }
