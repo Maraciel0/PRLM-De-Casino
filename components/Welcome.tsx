@@ -1,12 +1,11 @@
 import { getSiteText } from "@/lib/site-text";
 import { getSettings } from "@/lib/settings";
 import { getTreasury } from "@/lib/liability";
-import { getActiveAnnouncements } from "@/lib/announcements";
 import { formatAmount } from "@/lib/money";
 
 export default async function Welcome() {
   const [t, s, held, notices] = await Promise.all([
-    getSiteText(), getSettings(), getTreasury(), getActiveAnnouncements(),
+    getSiteText(), getSettings(), getTreasury(),
   ]);
 
   return (
