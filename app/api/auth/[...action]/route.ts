@@ -8,6 +8,7 @@ import { signupInput, loginInput, passwordInput } from "@/lib/validation";
 import { refCode } from "@/lib/ref";
 import { route, json, fail } from "@/lib/http";
 import { limit, ip } from "@/lib/rate-limit";
+import { getSiteText } from "@/lib/site-text";
 
 type Ctx = { params: Promise<{ action: string[] }> };
 export const dynamic = "force-dynamic";
@@ -18,10 +19,12 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   const [a] = (await ctx.params).action;
   if (a !== "session") return fail(404, "Not found");
 
+  const text = await getSiteText();
   const u = await getUser();
-  if (!u) return json({ user: null });
+  if (!u) return json({ user: null, text });
+
   const [w] = await db.select({ b: wallets.balance }).from(wallets).where(eq(wallets.userId, u.id)).limit(1);
-  return json({ user: u, balance: w?.b ?? 0 });
+  return json({ user: u, balance: w?.b ?? 0, text });
 });
 
 export const POST = route(async (req: Request, ctx: Ctx) => {
