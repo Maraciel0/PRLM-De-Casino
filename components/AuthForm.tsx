@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
-import { api } from "./Client";
+import { api, useSession } from "./Client";
 
 export default function AuthForm() {
+  const { text } = useSession();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,18 +22,24 @@ export default function AuthForm() {
   return (
     <div className="card space-y-3">
       <div className="flex gap-3 text-sm">
-        <button className={mode === "login" ? "" : "ghost"} onClick={() => setMode("login")}>Sign in</button>
-        <button className={mode === "signup" ? "" : "ghost"} onClick={() => setMode("signup")}>Create account</button>
+        <button className={mode === "login" ? "" : "ghost"} onClick={() => setMode("login")}>
+          {text.loginSignIn ?? "Sign in"}
+        </button>
+        <button className={mode === "signup" ? "" : "ghost"} onClick={() => setMode("signup")}>
+          {text.loginCreate ?? "Create account"}
+        </button>
       </div>
-      <p className="text-sm text-neutral-400">
-        {mode === "login" ? "Welcome back." : "Use your exact in-game name as your username."}
-      </p>
+
+      <p className="text-sm text-neutral-400">{text.loginIntro ?? ""}</p>
+
       <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="In-game name" />
       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
       {mode === "signup" && <p className="text-xs text-neutral-500">At least 10 characters.</p>}
-      <button disabled={!username || password.length < 10 && mode === "signup"} onClick={submit}>
-        {mode === "login" ? "Sign in" : "Create account"}
+
+      <button disabled={!username || (mode === "signup" && password.length < 10)} onClick={submit}>
+        {mode === "login" ? text.loginSignIn ?? "Sign in" : text.loginCreate ?? "Create account"}
       </button>
+
       {err && <p className="text-sm text-red-400">{err}</p>}
     </div>
   );
