@@ -4,6 +4,8 @@ import { api, useSession } from "./Client";
 import { formatAmount } from "@/lib/money";
 
 type Difficulty = "easy" | "normal" | "hard";
+type Layout = "grid" | "deck" | "arc";
+
 type GuessRes = {
   values: [number, number]; matched: boolean; pairsFound: number;
   guessesLeft: number; payout: number; status: string; balance: number;
@@ -12,21 +14,34 @@ type GuessRes = {
 const SIZE = 10;
 const HOLD_MS = 2600;
 const FLIP_DOWN_MS = 600;
+const GATHER_MS = 800;
+const FAN_MS = 900;
+const BACK_STEPS = 4;
 const FLIP_GAP_MS = 400;
 const FLIP_BACK_MS = 1200;
 
-const CFG: Record<Difficulty, { cost: number; moveMs: number; swaps: number; stepMs: number; steps: number; gather: boolean; backs: boolean }> = {
-  easy: { cost: 10, moveMs: 1100, swaps: 1, stepMs: 1300, steps: 12, gather: false, backs: false },
-  normal: { cost: 20, moveMs: 900, swaps: 4, stepMs: 1000, steps: 8, gather: false, backs: false },
-  hard: { cost: 30, moveMs: 500, swaps: 6, stepMs: 620, steps: 10, gather: true, backs: true },
+const CFG: Record<Difficulty, {
+  cost: number; reward: number; moveMs: number; swaps: number;
+  stepMs: number; steps: number; gather: boolean; backs: boolean;
+}> = {
+  easy: { cost: 10, reward: 3, moveMs: 1100, swaps: 1, stepMs: 1300, steps: 14, gather: false, backs: false },
+  normal: { cost: 20, reward: 6, moveMs: 900, swaps: 4, stepMs: 1000, steps: 8, gather: false, backs: false },
+  hard: { cost: 30, reward: 9, moveMs: 500, swaps: 6, stepMs: 620, steps: 10, gather: true, backs: true },
 };
 
 const identity = () => Array.from({ length: SIZE }, (_, i) => i);
-const grid = (slot: number) => ({
-  left: `${(slot % 5) * 20 + 1}%`,
-  top: `${Math.floor(slot / 5) * 50 + 2}%`,
-  opacity: 1,
-});
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function place(layout: Layout, slot: number) {
+  if (layout === "deck") {
+    return { left: `${42 + slot * 1.1}%`, top: `${5 + slot * 1.3}%`, zIndex: slot };
+  }
+  if (layout === "arc") {
+    const t = ((180 + (180 * slot) / (SIZE - 1)) * Math.PI) / 180;
+    return { left: `${50 + 36 * Math.cos(t)}%`, top: `${64 + 30 * Math.sin(t)}%`, zIndex: 1 };
+  }
+  return { left: `${(slot % 5) * 20 + 1}%`, top: `${Math.floor(slot / 5) * 50 + 2}%`, zIndex: 1 };
+}
 
 export default function Memory() {
   const { text } = useSession();
@@ -34,10 +49,11 @@ export default function Memory() {
   const cfg = CFG[diff];
 
   const [phase, setPhase] = useState<"idle" | "preview" | "moving" | "playing" | "done">("idle");
+  const [layout, setLayout] = useState<Layout>("grid");
   const [roundId, setRoundId] = useState<string | null>(null);
   const [cards, setCards] = useState<number[]>([]);
   const [slots, setSlots] = useState<number[]>(identity());
-  const [backs, setBacks] = useState<number[]>(identity().slice(0, 5));
+  const [backs, setBacks] = useState<number[]>([]);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [pending, setPending] = useState<number[]>([]);
   const [guessesLeft, setGuessesLeft] = useState(0);
@@ -45,9 +61,7 @@ export default function Memory() {
   const [payout, setPayout] = useState(0);
   const [err, setErr] = useState<string | null>(null);
 
-  const slotOf = (id: number) => slots.indexOf(id);
-
-  function step() {
+  function swapStep() {
     setSlots((prev) => {
       const next = [...prev];
       const pool = next.map((_, i) => i);
@@ -61,59 +75,62 @@ export default function Memory() {
       }
       return next;
     });
-    if (cfg.backs) {
-      setBacks((prev) => {
-        const next = [...prev];
-        for (let i = next.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [next[i], next[j]] = [next[j], next[i]];
-        }
-        return next;
-      });
-    }
   }
 
-  function runMoves(steps: number, done: () => void) {
-    setPhase("moving");
-    let n = 0;
-    const tick = () => {
-      step();
-      n++;
-      if (n < steps) setTimeout(tick, cfg.stepMs);
-      else setTimeout(done, cfg.stepMs);
-    };
-    tick();
+  function swapBacks() {
+    setBacks((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      return next;
+    });
   }
 
   async function start() {
     setErr(null);
     try {
       const r = await api<{
-        round: { id: string; deck: number[]; guessesLeft: number; backs: number[]; phase: string; stepsLeft: number };
+        round: { id: string; deck: number[]; guessesLeft: number; backs: number[] };
       }>("/api/games/memory/start", { method: "POST", body: JSON.stringify({ difficulty: diff }) });
 
       setRoundId(r.round.id);
       setCards(r.round.deck);
       setSlots(identity());
-      setBacks(r.round.backs.length ? r.round.backs : identity().slice(0, 5));
+      setBacks(r.round.backs.length ? r.round.backs : identity());
       setRevealed(new Set());
       setPending([]);
+      setLayout("grid");
       setGuessesLeft(r.round.guessesLeft);
       setPairsFound(0);
       setPayout(0);
       setPhase("preview");
 
-      setTimeout(() => {
-        setPhase("moving");
-        if (cfg.gather) {
-          // Gather: every card collapses toward the deck position, then fans.
-          setTimeout(() => runMoves(cfg.steps, () => {}), 700);
-        } else {
-          setTimeout(() => runMoves(cfg.steps, () => {}), FLIP_DOWN_MS);
+      await sleep(HOLD_MS);
+      setPhase("moving");
+      await sleep(FLIP_DOWN_MS);
+
+      if (cfg.gather) {
+        setLayout("deck");
+        await sleep(GATHER_MS);
+        setLayout("arc");
+        await sleep(FAN_MS);
+        for (let i = 0; i < BACK_STEPS; i++) {
+          swapBacks();
+          await sleep(cfg.stepMs);
         }
-      }, HOLD_MS);
+      }
+
+      for (let i = 0; i < cfg.steps; i++) {
+        swapStep();
+        await sleep(cfg.stepMs);
+      }
+
+      setPhase("playing");
     } catch (e) {
       setErr((e as Error).message);
+      setPhase("idle");
     }
   }
 
@@ -149,6 +166,7 @@ export default function Memory() {
   const faceUp = (id: number) => phase === "preview" || revealed.has(id) || pending.includes(id);
   const deck = cards.length ? cards : identity();
   const pairs = SIZE / 2;
+  const small = layout !== "grid";
 
   return (
     <div className="space-y-4">
@@ -192,20 +210,21 @@ export default function Memory() {
 
       <div className="mboard">
         {identity().map((id) => {
-          const slot = slotOf(id);
+          const slot = slots.indexOf(id);
+          const p = place(layout, slot);
           return (
             <button
               key={id}
               onClick={() => flip(id)}
               disabled={phase !== "playing" || revealed.has(id) || pending.includes(id)}
-              style={{ ...grid(slot), transitionDuration: `${cfg.moveMs}ms` }}
-              className={`mcard ${faceUp(id) ? "face-up" : ""} ${revealed.has(id) ? "matched" : ""}`}
+              style={{ left: p.left, top: p.top, zIndex: p.zIndex, transitionDuration: `${cfg.moveMs}ms` }}
+              className={`mcard ${small ? "small" : ""} ${faceUp(id) ? "face-up" : ""} ${revealed.has(id) ? "matched" : ""}`}
               aria-label={`Card ${id + 1}`}
             >
               <span className="mcard-inner">
                 <span
                   className="mcard-face back"
-                  style={{ backgroundImage: `url(/cards/${cfg.backs ? `pair-back-${backs[deck[id]]}` : "back"}.png)` }}
+                  style={{ backgroundImage: `url(/cards/${cfg.backs ? `pair-back-${backs[id] ?? 0}` : "back"}.png)` }}
                 />
                 <span className="mcard-face front" style={{ backgroundImage: `url(/cards/face-${deck[id]}.png)` }} />
               </span>
