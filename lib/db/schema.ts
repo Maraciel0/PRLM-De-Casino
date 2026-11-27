@@ -12,42 +12,17 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   role: role("role").notNull().default("player"),
   handle: text("handle").unique(),
+  passwordHash: text("password_hash"),
+  profileCode: text("profile_code").unique(),
   linkCode: text("link_code"),
   linkCodeExpiresAt: timestamp("link_code_expires_at", { withTimezone: true }),
   linkedAt: timestamp("linked_at", { withTimezone: true }),
-  // provably fair state
   serverSeed: text("server_seed").notNull(),
   serverSeedHash: text("server_seed_hash").notNull(),
   clientSeed: text("client_seed").notNull().default(""),
   nonce: integer("nonce").notNull().default(0),
   revealedSeeds: jsonb("revealed_seeds").notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  passwordHash: text("password_hash"),
-  profileCode: text("profile_code").unique(),
-});
-
-export const announcements = pgTable("announcements", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  body: text("body").notNull(),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const memoryRounds = pgTable("memory_rounds", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  deck: jsonb("deck").notNull(),
-  revealed: jsonb("revealed").notNull().default([]),
-  guessesLeft: integer("guesses_left").notNull(),
-  pairsFound: integer("pairs_found").notNull().default(0),
-  payout: bigint("payout", { mode: "number" }).notNull().default(0),
-  status: text("status").notNull().default("active"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [index("memory_user_idx").on(t.userId, t.createdAt)]);
-
-export const siteText = pgTable("site_text", {
-  key: text("key").primaryKey(),
-  value: text("value").notNull(),
 });
 
 export const settings = pgTable("settings", {
@@ -103,6 +78,23 @@ export const rounds = pgTable("rounds", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("rounds_user_idx").on(t.userId, t.createdAt)]);
 
+export const memoryRounds = pgTable("memory_rounds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deck: jsonb("deck").notNull(),
+  backs: jsonb("backs").notNull().default([]),
+  revealed: jsonb("revealed").notNull().default([]),
+  difficulty: text("difficulty").notNull().default("normal"),
+  guessesLeft: integer("guesses_left").notNull(),
+  pairsFound: integer("pairs_found").notNull().default(0),
+  payout: bigint("payout", { mode: "number" }).notNull().default(0),
+  status: text("status").notNull().default("active"),
+  phase: text("phase").notNull().default("play"),
+  stepsLeft: integer("steps_left").notNull().default(0),
+  movesLeft: integer("moves_left").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("memory_user_idx").on(t.userId, t.createdAt)]);
+
 export const ledger = pgTable("ledger", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -113,7 +105,6 @@ export const ledger = pgTable("ledger", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("ledger_user_idx").on(t.userId, t.createdAt)]);
 
-/** Every operator action, immutable. */
 export const audit = pgTable("audit", {
   id: uuid("id").primaryKey().defaultRandom(),
   operatorId: uuid("operator_id").notNull().references(() => users.id),
@@ -121,4 +112,16 @@ export const audit = pgTable("audit", {
   target: text("target").notNull(),
   detail: jsonb("detail").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const announcements = pgTable("announcements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  body: text("body").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const siteText = pgTable("site_text", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
 });
