@@ -56,3 +56,7 @@ export const memoryGuessInput = z.object({
   a: z.number().int().min(0),
   b: z.number().int().min(0),
 });
+
+export const memoryStartInput = z.object({
+  difficulty: z.enum(["easy", "normal", "hard"]),
+});
