@@ -112,6 +112,7 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
       const [r] = await tx.select().from(memoryRounds).where(eq(memoryRounds.id, roundId)).for("update").limit(1);
       if (!r || r.userId !== u.id) throw new Error("Round not found");
       if (r.status !== "active") throw new Error("Round already finished");
+      if (r.phase !== "play") throw new Error("Board is still moving");
 
       const deck = r.deck as number[];
       const revealed = r.revealed as number[];
