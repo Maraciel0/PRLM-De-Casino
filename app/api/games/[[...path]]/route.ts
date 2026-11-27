@@ -85,19 +85,25 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
 
   if (seg[0] === "memory" && seg[1] === "start") {
     await assertCanBet();
+    const diff = (await req.clone().json().catch(() => ({}))).difficulty as Difficulty | undefined;
+    const d = DIFFICULTIES[diff && diff in DIFFICULTIES ? diff : "normal"];
+    if (!d) return fail(400, "Unknown difficulty");
 
     const result = await db.transaction(async (tx) => {
       const [r] = await tx.insert(memoryRounds).values({
         userId: u.id, deck: buildDeck(), revealed: [], guessesLeft: MEMORY_GUESSES,
+        difficulty: diff ?? "normal",
+        backs: Array.from({ length: MEMORY_PAIRS }, (_, i) => i),
+        phase: d.gather ? "gather" : d.uniqueBacks ? "backs" : "play",
+        stepsLeft: d.steps, movesLeft: d.swapsPerStep,
       }).returning();
-      await applyDelta(tx, u.id, -MEMORY_COST, "memory_stake", r.id);
+      await applyDelta(tx, u.id, -d.cost, "memory_stake", r.id);
       const [w] = await tx.select({ b: wallets.balance }).from(wallets).where(eq(wallets.userId, u.id)).limit(1);
-      return { round: { id: r.id, deck: r.deck, guessesLeft: r.guessesLeft }, balance: w?.b ?? 0 };
+      return { round: r, balance: w?.b ?? 0 };
     });
 
     return json(result);
   }
-
   if (seg[0] === "memory" && seg[1] === "guess") {
     const { roundId, a, b } = memoryGuessInput.parse(await req.json());
     if (a === b) return fail(400, "Pick two different cards");
