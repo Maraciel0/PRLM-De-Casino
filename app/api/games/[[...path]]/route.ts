@@ -2,11 +2,14 @@ import { db } from "@/lib/db";
 import { users, wallets, rounds, memoryRounds } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireUser, assertCsrf } from "@/lib/auth";
-import { rollInput, memoryGuessInput } from "@/lib/validation";
+import { rollInput, memoryGuessInput, memoryStartInput } from "@/lib/validation";
 import { assertCanBet } from "@/lib/liability";
 import { rollFloat } from "@/lib/fair";
 import { multiplierBps, wins, table } from "@/lib/dice";
-import { buildDeck, MEMORY_COST, MEMORY_GUESSES, MEMORY_PAIRS, MEMORY_PAIR_REWARD } from "@/lib/memory";
+import {
+  buildDeck, buildBacks, DIFFICULTIES, MEMORY_GUESSES, MEMORY_PAIRS,
+  type Difficulty,
+} from "@/lib/memory";
 import { getSettings } from "@/lib/settings";
 import { applyDelta } from "@/lib/wallet";
 import { route, json, fail } from "@/lib/http";
@@ -34,7 +37,17 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   }
 
   if (seg[0] === "memory" && seg.length === 1) {
-    return json({ paused: s.paused, cost: MEMORY_COST, guesses: MEMORY_GUESSES, cards: MEMORY_PAIRS * 2 });
+    return json({
+      paused: s.paused,
+      cards: MEMORY_PAIRS * 2,
+      guesses: MEMORY_GUESSES,
+      difficulties: Object.fromEntries(
+        (Object.keys(DIFFICULTIES) as Difficulty[]).map((k) => [
+          k,
+          { cost: DIFFICULTIES[k].cost, reward: DIFFICULTIES[k].reward },
+        ]),
+      ),
+    });
   }
 
   return fail(404, "Not found");
@@ -85,17 +98,17 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
 
   if (seg[0] === "memory" && seg[1] === "start") {
     await assertCanBet();
-    const diff = (await req.clone().json().catch(() => ({}))).difficulty as Difficulty | undefined;
-    const d = DIFFICULTIES[diff && diff in DIFFICULTIES ? diff : "normal"];
-    if (!d) return fail(400, "Unknown difficulty");
+    const { difficulty } = memoryStartInput.parse(await req.json().catch(() => ({})));
+    const d = DIFFICULTIES[difficulty];
 
     const result = await db.transaction(async (tx) => {
       const [r] = await tx.insert(memoryRounds).values({
-        userId: u.id, deck: buildDeck(), revealed: [], guessesLeft: MEMORY_GUESSES,
-        difficulty: diff ?? "normal",
-        backs: Array.from({ length: MEMORY_PAIRS }, (_, i) => i),
-        phase: d.gather ? "gather" : d.uniqueBacks ? "backs" : "play",
-        stepsLeft: d.steps, movesLeft: d.swapsPerStep,
+        userId: u.id,
+        deck: buildDeck(),
+        backs: buildBacks(),
+        revealed: [],
+        guessesLeft: MEMORY_GUESSES,
+        difficulty,
       }).returning();
       await applyDelta(tx, u.id, -d.cost, "memory_stake", r.id);
       const [w] = await tx.select({ b: wallets.balance }).from(wallets).where(eq(wallets.userId, u.id)).limit(1);
@@ -104,6 +117,7 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
 
     return json(result);
   }
+
   if (seg[0] === "memory" && seg[1] === "guess") {
     const { roundId, a, b } = memoryGuessInput.parse(await req.json());
     if (a === b) return fail(400, "Pick two different cards");
@@ -112,17 +126,17 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
       const [r] = await tx.select().from(memoryRounds).where(eq(memoryRounds.id, roundId)).for("update").limit(1);
       if (!r || r.userId !== u.id) throw new Error("Round not found");
       if (r.status !== "active") throw new Error("Round already finished");
-      if (r.phase !== "play") throw new Error("Board is still moving");
 
       const deck = r.deck as number[];
       const revealed = r.revealed as number[];
       if (a >= deck.length || b >= deck.length) throw new Error("Card out of range");
       if (revealed.includes(a) || revealed.includes(b)) throw new Error("Card already revealed");
 
+      const reward = DIFFICULTIES[r.difficulty as Difficulty].reward;
       const matched = deck[a] === deck[b];
       const guessesLeft = r.guessesLeft - 1;
       const pairsFound = r.pairsFound + (matched ? 1 : 0);
-      const payout = r.payout + (matched ? MEMORY_PAIR_REWARD : 0);
+      const payout = r.payout + (matched ? reward : 0);
       const nextRevealed = matched ? [...revealed, a, b] : revealed;
 
       let status = "active";
