@@ -3,6 +3,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="space-y-4">
       <nav className="flex flex-wrap gap-3 text-sm text-neutral-400">
         <a href="/admin">Treasury</a>
+        <a href="/admin/users">Users</a>
         <a href="/admin/deposits">Deposits</a>
         <a href="/admin/withdrawals">Withdrawals</a>
         <a href="/admin/announcements">Notices</a>
