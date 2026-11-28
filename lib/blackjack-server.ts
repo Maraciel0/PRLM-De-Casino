@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 import { rollFloat } from "./fair";
 import { BJ_DECKS, canAffordDouble } from "./blackjack";
 import type { blackjackRounds } from "./db/schema";
@@ -37,4 +39,41 @@ export function publicView(r: Row, balance: number, maxWin: number) {
     canDouble: active && player.length === 2 && !r.doubled && canAffordDouble(r.bet, maxWin) && balance >= r.bet,
     balance,
   };
+}
+
+let tableReady: Promise<void> | null = null;
+
+/**
+ * Creates the blackjack table on first use, so the game works even if `db:push` was never run.
+ * Safe to call on every request: it only touches the database once per server instance.
+ */
+export function ensureBlackjackTable(): Promise<void> {
+  if (!tableReady) {
+    tableReady = (async () => {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blackjack_rounds (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          shoe jsonb NOT NULL,
+          next integer NOT NULL DEFAULT 4,
+          player jsonb NOT NULL DEFAULT '[]'::jsonb,
+          dealer jsonb NOT NULL DEFAULT '[]'::jsonb,
+          bet bigint NOT NULL,
+          doubled boolean NOT NULL DEFAULT false,
+          status text NOT NULL DEFAULT 'active',
+          result text,
+          payout bigint NOT NULL DEFAULT 0,
+          nonce integer NOT NULL,
+          client_seed text NOT NULL,
+          server_seed_hash text NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        )`);
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS blackjack_user_idx ON blackjack_rounds (user_id, status, created_at)`);
+    })().catch((e) => {
+      tableReady = null; // try again on the next request
+      throw e;
+    });
+  }
+  return tableReady;
 }

@@ -12,7 +12,7 @@ import { limit } from "@/lib/rate-limit";
 import {
   handValue, isBlackjack, outcome, naturalPayout, maxBetFor, canAffordDouble, type BjResult,
 } from "@/lib/blackjack";
-import { buildShoe, publicView } from "@/lib/blackjack-server";
+import { buildShoe, publicView, ensureBlackjackTable } from "@/lib/blackjack-server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,7 @@ export const POST = route(async (req: Request) => {
   if (!limit(`play:${u.id}`, 60, 60_000)) return fail(429, "Slow down");
 
 // ---------- Hit / stand / double ----------
+  await ensureBlackjackTable();
   const { roundId, action: move } = blackjackActInput.parse(await req.json());
   const s = await getSettings();
 

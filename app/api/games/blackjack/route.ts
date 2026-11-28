@@ -4,13 +4,14 @@ import { and, desc, eq } from "drizzle-orm";
 import { getUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { maxBetFor } from "@/lib/blackjack";
-import { publicView } from "@/lib/blackjack-server";
+import { publicView, ensureBlackjackTable } from "@/lib/blackjack-server";
 import { route, json } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
 /** Table limits, plus the player's unfinished hand if they reloaded mid-round. */
 export const GET = route(async () => {
+  await ensureBlackjackTable();
   const s = await getSettings();
   const u = await getUser();
 
