@@ -170,6 +170,12 @@ export default function Memory() {
         await sleep(cfg.stepMs);
       }
 
+      if (cfg.gather) {
+        // Hard mode: settle the cards back into the normal 5 x 2 board before play begins.
+        setLayout("grid");
+        await sleep(FAN_MS);
+      }
+
       setPhase("playing");
     } catch (e) {
       setErr((e as Error).message);
