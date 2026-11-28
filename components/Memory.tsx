@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { api, useSession } from "./Client";
 import { formatAmount } from "@/lib/money";
 
@@ -87,7 +87,10 @@ export default function Memory() {
   const [roundId, setRoundId] = useState<string | null>(null);
   const [cards, setCards] = useState<number[]>([]);
   const [slots, setSlots] = useState<number[]>(identity());
+  const slotsRef = useRef<number[]>(identity());
   const [backs, setBacks] = useState<number[]>([]);
+  const [backPos, setBackPos] = useState<number[]>(identity());
+  const [floatBacks, setFloatBacks] = useState(false);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [pending, setPending] = useState<number[]>([]);
   const [guessesLeft, setGuessesLeft] = useState(0);
@@ -99,31 +102,28 @@ export default function Memory() {
   const [payout, setPayout] = useState(0);
   const [err, setErr] = useState<string | null>(null);
 
-  function swapStep() {
-    setSlots((prev) => {
-      const next = [...prev];
-      const pool = next.map((_, i) => i);
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      for (let k = 0; k + 1 < pool.length && k / 2 < cfg.swaps; k += 2) {
-        const a = pool[k], b = pool[k + 1];
-        [next[a], next[b]] = [next[b], next[a]];
-      }
-      return next;
-    });
+  function shufflePairs<T>(arr: T[]) {
+    const next = [...arr];
+    const pool = next.map((_, i) => i);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    for (let k = 0; k + 1 < pool.length && k / 2 < cfg.swaps; k += 2) {
+      const a = pool[k], b = pool[k + 1];
+      [next[a], next[b]] = [next[b], next[a]];
+    }
+    return next;
   }
 
-  function swapBacks() {
-    setBacks((prev) => {
-      const next = [...prev];
-      for (let i = next.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [next[i], next[j]] = [next[j], next[i]];
-      }
-      return next;
-    });
+  function swapStep() {
+    const next = shufflePairs(slotsRef.current);
+    slotsRef.current = next;
+    setSlots(next);
+  }
+
+  function swapFloatBacks() {
+    setBackPos((prev) => shufflePairs(prev));
   }
 
   async function start() {
@@ -138,6 +138,9 @@ export default function Memory() {
       setRoundId(r.round.id);
       setCards(r.round.deck);
       setSlots(identity());
+      slotsRef.current = identity();
+      setBackPos(identity());
+      setFloatBacks(false);
       setBacks(r.round.backs.length ? r.round.backs : identity());
       setRevealed(new Set());
       setPending([]);
@@ -164,12 +167,20 @@ export default function Memory() {
           await sleep(cfg.stepMs);
         }
 
-        // Phase 2: the pair-backs shuffle on their own; the cards stay where they are.
+        // Phase 2: the pair-backs detach and drift around separately from the cards.
         setMoveStage("backs");
+        const home = () => Array.from({ length: SIZE }, (_, i) => slotsRef.current.indexOf(i));
+        setBackPos(home());
+        setFloatBacks(true);
+        await sleep(cfg.stepMs);
         for (let i = 0; i < BACK_STEPS; i++) {
-          swapBacks();
+          swapFloatBacks();
           await sleep(cfg.stepMs);
         }
+        // Bring the floating backs home to their cards before the final sweep.
+        setBackPos(home());
+        await sleep(cfg.stepMs);
+        setFloatBacks(false);
 
         // Phase 3: the cards sweep into a non-overlapping semi-circle.
         setMoveStage("sweep");
@@ -187,6 +198,7 @@ export default function Memory() {
     } catch (e) {
       setErr((e as Error).message);
       setMoveStage(null);
+      setFloatBacks(false);
       setStarting(false);
       setPhase("idle");
     }
@@ -224,7 +236,7 @@ export default function Memory() {
   }
 
   const backSrc = (id: number) =>
-    cfg.backs && backs.length ? `/cards/pair-back-${backs[id]}.png` : "/cards/back.png";
+    cfg.backs && !floatBacks && backs.length ? `/cards/pair-back-${backs[id]}.png` : "/cards/back.png";
   const faceUp = (id: number) =>
     phase === "preview" || phase === "done" || revealed.has(id) || pending.includes(id);
   const deck = cards.length ? cards : identity();
@@ -348,6 +360,22 @@ export default function Memory() {
                   <span className="mcard-face front" style={{ backgroundImage: `url(/cards/face-${deck[id]}.png)` }} />
                 </span>
               </button>
+            );
+          })}
+          {floatBacks && identity().map((i) => {
+            const p = place("grid", backPos[i]);
+            return (
+              <span
+                key={`float-${i}`}
+                className="mfloat"
+                style={{
+                  left: p.left,
+                  top: p.top,
+                  zIndex: 20,
+                  transitionDuration: `${cfg.moveMs}ms`,
+                  backgroundImage: `url(/cards/pair-back-${backs[i]}.png)`,
+                }}
+              />
             );
           })}
         </div>
