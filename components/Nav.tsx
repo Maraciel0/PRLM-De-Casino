@@ -29,7 +29,7 @@ function Brand({ name }: { name: string }) {
 export default function Nav() {
   const { user, loading, text } = useSession();
   const path = usePathname() ?? "/";
-  const brand = text.brand ?? "The House";
+  const brand = text.brand ?? "The Atlantic Casino";
 
   if (loading) return <Brand name={brand} />;
 
