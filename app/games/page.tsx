@@ -33,6 +33,11 @@ export default function Page() {
               <h2 className="mt-3 text-xl font-semibold">{text.memoryTitle ?? "Memory"}</h2>
               <p className="mt-1 text-sm text-neutral-400">Memorise the cards, survive the shuffle.</p>
             </a>
+            <a href="/games/roulette" className="card card-link block">
+              <span className="pill">Probability lab</span>
+              <h2 className="mt-3 text-xl font-semibold">Number wheel</h2>
+              <p className="mt-1 text-sm text-neutral-400">Explore 37 equally likely outcomes with a spinning probability wheel.</p>
+            </a>
           </div>
         </>
       )}
