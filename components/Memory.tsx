@@ -75,8 +75,7 @@ export default function Memory() {
 
   // Preload card art so nothing pops in mid-flip.
   useEffect(() => {
-    ["back", "face-0", "face-1", "face-2", "face-3", "face-4",
-      "pair-back-0", "pair-back-1", "pair-back-2", "pair-back-3", "pair-back-4"].forEach((n) => {
+    ["back", "face-0", "face-1", "face-2", "face-3", "face-4"].forEach((n) => {
       const img = new Image();
       img.src = `/cards/${n}.png`;
     });
@@ -328,7 +327,7 @@ export default function Memory() {
                 <span className="mcard-inner">
                   <span
                     className="mcard-face back"
-                    style={{ backgroundImage: `url(/cards/${cfg.backs ? `pair-back-${backs[id] ?? 0}` : "back"}.png)` }}
+                    style={{ backgroundImage: "url(/cards/back.png)" }}
                   />
                   <span className="mcard-face front" style={{ backgroundImage: `url(/cards/face-${deck[id]}.png)` }} />
                 </span>
