@@ -80,7 +80,7 @@ export default function Dice() {
       <div className="card">
         <h2 className="font-medium">{text.diceLastRolls ?? "Last rolls"}</h2>
         <ul className="mt-2 space-y-1 text-sm text-neutral-400">
-          {log.map((l, i) => <li key={i}>{l}</li>)}
+          {log.map((l, i) => <li key={i} className={l.includes("WIN") ? "text-gold-bright" : ""}>{l}</li>)}
           {!log.length && <li>{text.diceNoRolls ?? "No rolls yet."}</li>}
         </ul>
       </div>

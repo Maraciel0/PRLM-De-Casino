@@ -95,6 +95,25 @@ export const memoryRounds = pgTable("memory_rounds", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("memory_user_idx").on(t.userId, t.createdAt)]);
 
+export const blackjackRounds = pgTable("blackjack_rounds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** First 52 cards of the shuffled shoe, server-side only. Card = 0..51, rank = c % 13, suit = floor(c / 13). */
+  shoe: jsonb("shoe").notNull(),
+  next: integer("next").notNull().default(4),
+  player: jsonb("player").notNull().default([]),
+  dealer: jsonb("dealer").notNull().default([]),
+  bet: bigint("bet", { mode: "number" }).notNull(),
+  doubled: boolean("doubled").notNull().default(false),
+  status: text("status").notNull().default("active"),
+  result: text("result"),
+  payout: bigint("payout", { mode: "number" }).notNull().default(0),
+  nonce: integer("nonce").notNull(),
+  clientSeed: text("client_seed").notNull(),
+  serverSeedHash: text("server_seed_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("blackjack_user_idx").on(t.userId, t.status, t.createdAt)]);
+
 export const ledger = pgTable("ledger", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

@@ -3,6 +3,7 @@ import {
   DIFFICULTIES, maxPayout, breakevenPairs, type Difficulty,
 } from "@/lib/memory";
 import { formatAmount } from "@/lib/money";
+import { BJ_DECKS } from "@/lib/blackjack";
 
 export default function Odds() {
   const tiers: Difficulty[] = ["easy", "normal", "hard"];
@@ -39,6 +40,23 @@ export default function Odds() {
           </div>
         );
       })}
+
+      <div className="card space-y-2">
+        <h2 className="font-medium">Blackjack</h2>
+        <ul className="space-y-1 text-sm text-neutral-400">
+          <li>{BJ_DECKS} decks, shuffled fresh for every hand.</li>
+          <li>Closest to 21 without going over beats the dealer. Aces count 11 or 1, face cards 10.</li>
+          <li>Blackjack (an ace and a ten-value card) pays 3 to 2.</li>
+          <li>The dealer checks for blackjack first, then draws to 16 and stands on every 17, soft 17 included.</li>
+          <li>You may hit, stand, or double down on your first two cards (one card only, stake doubled).</li>
+          <li>No splitting, no insurance, no surrender. A push returns your bet.</li>
+        </ul>
+        <p className="text-xs text-neutral-500">
+          Every shuffle comes from your server seed, client seed and nonce, the same as the dice, so a hand can be
+          replayed and checked once the seed is revealed. Large bets are capped so the biggest possible payout stays
+          under the house max win.
+        </p>
+      </div>
 
       <p className="text-xs text-neutral-600">
         All games pay slightly under true odds. That margin is what keeps the house solvent and able to pay withdrawals.

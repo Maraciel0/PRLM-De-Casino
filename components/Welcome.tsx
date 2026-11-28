@@ -9,8 +9,8 @@ export default async function Welcome() {
   return (
     <div className="space-y-8">
       <section className="space-y-3 pt-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t.eyebrow}</p>
-        <h1 className="text-4xl font-semibold tracking-tight">{t.title}</h1>
+        <p className="eyebrow">{t.eyebrow}</p>
+        <h1 className="text-5xl font-bold">{t.title}</h1>
         <p className="max-w-xl text-neutral-400">{t.intro}</p>
         <a href={t.ctaHref}>
           <button className="mt-2">{t.ctaLabel}</button>
@@ -19,19 +19,19 @@ export default async function Welcome() {
 
       <section className="grid gap-3 sm:grid-cols-2">
         <div className="card">
-          <p className="text-xs text-neutral-500">{t.labelHeld}</p>
-          <p className="mt-1 text-xl tabular-nums">{formatAmount(held)}</p>
+          <p className="stat-label">{t.labelHeld}</p>
+          <p className="stat-value gold mt-1">{formatAmount(held)}</p>
         </div>
         <div className="card">
-          <p className="text-xs text-neutral-500">{t.labelMinBet}</p>
-          <p className="mt-1 text-xl tabular-nums">{formatAmount(s.minBet)}</p>
+          <p className="stat-label">{t.labelMinBet}</p>
+          <p className="stat-value gold mt-1">{formatAmount(s.minBet)}</p>
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
         {[1, 2, 3].map((i) => (
           <div key={i} className="card">
-            <p className="text-xs text-neutral-600">0{i}</p>
+            <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-gold">0{i}</p>
             <h2 className="mt-1 font-medium">{t[`step${i}Title`]}</h2>
             <p className="mt-1 text-sm text-neutral-400">{t[`step${i}Body`]}</p>
           </div>
@@ -43,7 +43,7 @@ export default async function Welcome() {
         <p className="mt-1 text-sm text-neutral-400">{t.noteBody}</p>
       </section>
 
-      <p className="pb-6 text-xs text-neutral-600">{t.footer}</p>
+      <p className="pb-6 text-xs text-neutral-500">{t.footer}</p>
     </div>
   );
 }

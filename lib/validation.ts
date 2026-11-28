@@ -60,3 +60,10 @@ export const memoryGuessInput = z.object({
 export const memoryStartInput = z.object({
   difficulty: z.enum(["easy", "normal", "hard"]),
 });
+
+export const blackjackStartInput = z.object({ bet: amount });
+
+export const blackjackActInput = z.object({
+  roundId: z.string().uuid(),
+  action: z.enum(["hit", "stand", "double"]),
+});
