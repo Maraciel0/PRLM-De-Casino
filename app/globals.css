@@ -188,6 +188,7 @@
   transition-duration: 900ms;
 }
 .mcard.small { width: 13%; height: 34%; }
+.mcard.arc-card { width: 8%; height: 16%; }
 .mcard:disabled { opacity: 1; }
 .mcard.playable { cursor: pointer; }
 .mcard-inner {
