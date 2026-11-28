@@ -2,7 +2,7 @@ import { db } from "./db";
 import { siteText } from "./db/schema";
 
 export const DEFAULT_TEXT: Record<string, string> = {
-  brand: "The House",
+  brand: "The Atlatic Casino",
   navGames: "Games",
   navWallet: "Wallet",
   navProfile: "Profile",
@@ -10,7 +10,7 @@ export const DEFAULT_TEXT: Record<string, string> = {
   navSignIn: "Sign in",
 
   eyebrow: "Parlamentum · gold only",
-  title: "The House",
+  title: "The Atlantic Casino",
   intro: "A player-run dice hall. Deposit in-game gold, roll at published odds, withdraw whenever you like.",
   ctaLabel: "Get started",
   ctaHref: "/login",
