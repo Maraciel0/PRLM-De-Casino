@@ -67,3 +67,11 @@ export const blackjackActInput = z.object({
   roundId: z.string().uuid(),
   action: z.enum(["hit", "stand", "double"]),
 });
+
+export const rouletteSpinInput = z.object({
+  bet: amount,
+  betType: z.enum(["number", "red", "black", "odd", "even", "low", "high"]),
+  pick: z.number().int().min(0).max(36).optional(),
+}).refine((v) => v.betType !== "number" || v.pick !== undefined, {
+  path: ["pick"], message: "Pick a number",
+});

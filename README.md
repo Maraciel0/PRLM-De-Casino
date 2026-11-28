@@ -8,7 +8,7 @@ provably fair rolls, bankroll stop-loss.
 1. `npm install`
 2. Create Postgres (Vercel Postgres / Neon). Set `DATABASE_URL` to the POOLED string.
 3. In Vercel env: `AUTH_SECRET`, `CSRF_SECRET`, `CRON_SECRET`, `OPERATOR_HANDLES`, `HOUSE_ACCOUNT`, `APP_URL`.
-4. `npm run db:push` then `npm run db:seed`
+4. `npm run db:push` (or `npm run db:migrate`) then `npm run db:seed`
 5. Deploy. The cron registers itself from `vercel.json`.
 
 ## Your first session
@@ -19,7 +19,7 @@ opening the tables. Default is 500 gold bankroll.
 
 ## Numbers that govern everything
 
-- `houseEdgeBps` 300 = 3%. Payouts are derived from it; never edit a payout table by hand.
+- `houseEdgeBps` 300 = 3%. Dice payouts are derived from it; never edit that payout table by hand. Roulette uses standard European rules, so its built-in edge is 2.70%.
 - `maxWin` caps a single payout. Per-game max bets are computed from it automatically.
 - `stopLossLiability` auto-closes the tables when total player credit reaches it.
 
@@ -32,7 +32,7 @@ opening the tables. Default is 500 gold bankroll.
 
 ## Not built yet
 
-- Games live: dice, memory (three difficulty tiers) and blackjack. Coin flip and wheel are next.
+- Games live: dice, memory (three difficulty tiers), blackjack and European roulette. Coin flip is next.
 - The link handshake is trust-based (no profile scrape). Add one in `link/verify` when volume justifies it.
 - Rate limiting is per-instance. Move to Upstash before you promote publicly.
 

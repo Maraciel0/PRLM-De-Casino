@@ -114,6 +114,22 @@ export const blackjackRounds = pgTable("blackjack_rounds", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("blackjack_user_idx").on(t.userId, t.status, t.createdAt)]);
 
+export const rouletteRounds = pgTable("roulette_rounds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  bet: bigint("bet", { mode: "number" }).notNull(),
+  betType: text("bet_type").notNull(),
+  /** Straight-up selection; null for colour, parity and half bets. */
+  pick: integer("pick"),
+  number: integer("number").notNull(),
+  won: boolean("won").notNull(),
+  payout: bigint("payout", { mode: "number" }).notNull().default(0),
+  nonce: integer("nonce").notNull(),
+  clientSeed: text("client_seed").notNull(),
+  serverSeedHash: text("server_seed_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("roulette_user_idx").on(t.userId, t.createdAt)]);
+
 export const ledger = pgTable("ledger", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

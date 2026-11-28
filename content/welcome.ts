@@ -2,11 +2,11 @@ export const welcome = {
   eyebrow: "Parlamentum · gold only",
   title: "The Atlantic Casino",
   intro:
-    "A player-run dice hall. Deposit in-game gold, roll at published odds, withdraw whenever you like.",
+    "A player-run casino. Deposit in-game gold, play dice, blackjack and roulette, withdraw whenever you like.",
   steps: [
     { title: "Link", body: "Link your Parlamentum account so the house knows where to send your gold." },
     { title: "Deposit", body: "Send gold in-game, paste the transaction ID, and it is credited once confirmed." },
-    { title: "Roll", body: "Pick your odds on the dice table. Every roll is provably fair and verifiable." },
+    { title: "Play", body: "Pick dice, blackjack or European roulette. Every result is provably fair and verifiable." },
   ],
   cta: "Get started",
   ctaHref: "/link",

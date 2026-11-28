@@ -34,9 +34,9 @@ export default function Page() {
               <p className="mt-1 text-sm text-neutral-400">Memorise the cards, survive the shuffle.</p>
             </a>
             <a href="/games/roulette" className="card card-link block">
-              <span className="pill">Probability lab</span>
-              <h2 className="mt-3 text-xl font-semibold">Number wheel</h2>
-              <p className="mt-1 text-sm text-neutral-400">Explore 37 equally likely outcomes with a spinning probability wheel.</p>
+              <span className="pill">Live</span>
+              <h2 className="mt-3 text-xl font-semibold">{text.rouletteTitle ?? "Roulette"}</h2>
+              <p className="mt-1 text-sm text-neutral-400">Bet on a number or colour across 37 pockets. Zero is green.</p>
             </a>
           </div>
         </>
