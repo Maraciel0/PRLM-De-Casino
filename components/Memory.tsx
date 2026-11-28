@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { api, useSession } from "./Client";
 import { formatAmount } from "@/lib/money";
 
@@ -17,6 +17,9 @@ const FLIP_DOWN_MS = 600;
 const GATHER_MS = 800;
 const FAN_MS = 900;
 const BACK_STEPS = 4;
+const ARC_W = 8;
+const ARC_STEP = 9.5;
+const ARC_RY = 46;
 const FLIP_GAP_MS = 400;
 const FLIP_BACK_MS = 1200;
 
@@ -55,15 +58,11 @@ function place(layout: Layout, slot: number) {
     };
   }
   if (layout === "arc") {
-    // Half-circle whose bounding box (card edges included) is centred on the board.
-    const t = ((180 + (180 * slot) / (SIZE - 1)) * Math.PI) / 180;
-    const rx = 36;
-    const ry = 30;
-    return {
-      left: `${(100 - SMALL_W) / 2 + rx * Math.cos(t)}%`,
-      top: `${(100 - SMALL_H) / 2 + ry / 2 + ry * Math.sin(t)}%`,
-      zIndex: 1,
-    };
+    // A shallow semi-circle: even horizontal spacing keeps every card clear of its neighbours.
+    const left = (100 - ARC_W) / 2 + (slot - (SIZE - 1) / 2) * ARC_STEP;
+    const u = (left + ARC_W / 2 - 50) / 46;
+    const top = 54 - ARC_RY * Math.sqrt(Math.max(0, 1 - u * u));
+    return { left: `${left}%`, top: `${top}%`, zIndex: 1 };
   }
   return { left: `${(slot % 5) * 20 + 1}%`, top: `${Math.floor(slot / 5) * 50 + 2}%`, zIndex: 1 };
 }
@@ -75,18 +74,23 @@ export default function Memory() {
 
   // Preload card art so nothing pops in mid-flip.
   useEffect(() => {
-    ["back", "face-0", "face-1", "face-2", "face-3", "face-4"].forEach((n) => {
+    ["back", "face-0", "face-1", "face-2", "face-3", "face-4",
+      "pair-back-0", "pair-back-1", "pair-back-2", "pair-back-3", "pair-back-4"].forEach((n) => {
       const img = new Image();
       img.src = `/cards/${n}.png`;
     });
   }, []);
 
   const [phase, setPhase] = useState<"idle" | "preview" | "moving" | "playing" | "done">("idle");
+  const [moveStage, setMoveStage] = useState<"cards" | "backs" | "sweep" | null>(null);
   const [layout, setLayout] = useState<Layout>("grid");
   const [roundId, setRoundId] = useState<string | null>(null);
   const [cards, setCards] = useState<number[]>([]);
   const [slots, setSlots] = useState<number[]>(identity());
+  const slotsRef = useRef<number[]>(identity());
   const [backs, setBacks] = useState<number[]>([]);
+  const [backPos, setBackPos] = useState<number[]>(identity());
+  const [floatBacks, setFloatBacks] = useState(false);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [pending, setPending] = useState<number[]>([]);
   const [guessesLeft, setGuessesLeft] = useState(0);
@@ -98,35 +102,33 @@ export default function Memory() {
   const [payout, setPayout] = useState(0);
   const [err, setErr] = useState<string | null>(null);
 
-  function swapStep() {
-    setSlots((prev) => {
-      const next = [...prev];
-      const pool = next.map((_, i) => i);
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      for (let k = 0; k + 1 < pool.length && k / 2 < cfg.swaps; k += 2) {
-        const a = pool[k], b = pool[k + 1];
-        [next[a], next[b]] = [next[b], next[a]];
-      }
-      return next;
-    });
+  function shufflePairs<T>(arr: T[]) {
+    const next = [...arr];
+    const pool = next.map((_, i) => i);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    for (let k = 0; k + 1 < pool.length && k / 2 < cfg.swaps; k += 2) {
+      const a = pool[k], b = pool[k + 1];
+      [next[a], next[b]] = [next[b], next[a]];
+    }
+    return next;
   }
 
-  function swapBacks() {
-    setBacks((prev) => {
-      const next = [...prev];
-      for (let i = next.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [next[i], next[j]] = [next[j], next[i]];
-      }
-      return next;
-    });
+  function swapStep() {
+    const next = shufflePairs(slotsRef.current);
+    slotsRef.current = next;
+    setSlots(next);
+  }
+
+  function swapFloatBacks() {
+    setBackPos((prev) => shufflePairs(prev));
   }
 
   async function start() {
     setErr(null);
+    setMoveStage(null);
     setStarting(true);
     try {
       const r = await api<{
@@ -136,6 +138,9 @@ export default function Memory() {
       setRoundId(r.round.id);
       setCards(r.round.deck);
       setSlots(identity());
+      slotsRef.current = identity();
+      setBackPos(identity());
+      setFloatBacks(false);
       setBacks(r.round.backs.length ? r.round.backs : identity());
       setRevealed(new Set());
       setPending([]);
@@ -154,30 +159,46 @@ export default function Memory() {
       await sleep(FLIP_DOWN_MS);
 
       if (cfg.gather) {
-        setLayout("deck");
-        await sleep(GATHER_MS);
+        // Phase 1: the cards shuffle around the standard 5 x 2 grid.
+        setLayout("grid");
+        setMoveStage("cards");
+        for (let i = 0; i < cfg.steps; i++) {
+          swapStep();
+          await sleep(cfg.stepMs);
+        }
+
+        // Phase 2: the pair-backs detach and drift around separately from the cards.
+        setMoveStage("backs");
+        const home = () => Array.from({ length: SIZE }, (_, i) => slotsRef.current.indexOf(i));
+        setBackPos(home());
+        setFloatBacks(true);
+        await sleep(cfg.stepMs);
+        for (let i = 0; i < BACK_STEPS; i++) {
+          swapFloatBacks();
+          await sleep(cfg.stepMs);
+        }
+        // Bring the floating backs home to their cards before the final sweep.
+        setBackPos(home());
+        await sleep(cfg.stepMs);
+        setFloatBacks(false);
+
+        // Phase 3: the cards sweep into a non-overlapping semi-circle.
+        setMoveStage("sweep");
         setLayout("arc");
         await sleep(FAN_MS);
-        for (let i = 0; i < BACK_STEPS; i++) {
-          swapBacks();
+      } else {
+        for (let i = 0; i < cfg.steps; i++) {
+          swapStep();
           await sleep(cfg.stepMs);
         }
       }
 
-      for (let i = 0; i < cfg.steps; i++) {
-        swapStep();
-        await sleep(cfg.stepMs);
-      }
-
-      if (cfg.gather) {
-        // Hard mode: settle the cards back into the normal 5 x 2 board before play begins.
-        setLayout("grid");
-        await sleep(FAN_MS);
-      }
-
+      setMoveStage(null);
       setPhase("playing");
     } catch (e) {
       setErr((e as Error).message);
+      setMoveStage(null);
+      setFloatBacks(false);
       setStarting(false);
       setPhase("idle");
     }
@@ -214,11 +235,14 @@ export default function Memory() {
     setTimeout(() => resolve(first, id), FLIP_GAP_MS);
   }
 
+  const backSrc = (id: number) =>
+    cfg.backs && !floatBacks && backs.length ? `/cards/pair-back-${backs[id]}.png` : "/cards/back.png";
   const faceUp = (id: number) =>
     phase === "preview" || phase === "done" || revealed.has(id) || pending.includes(id);
   const deck = cards.length ? cards : identity();
   const pairs = SIZE / 2;
-  const small = layout !== "grid";
+  const small = layout === "deck";
+  const arcCard = layout === "arc";
   const won = pairsFound >= pairs;
   const canPlay = phase === "playing" && pending.length < 2;
 
@@ -273,7 +297,10 @@ export default function Memory() {
           <div className="space-y-2" aria-live="polite">
             <p className="text-sm font-medium text-gold-bright">
               {phase === "preview" ? (text.memoryMemorise ?? "Memorise the board")
-                : phase === "moving" ? (text.memoryShuffling ?? "Watch closely — shuffling")
+                : phase === "moving"
+                  ? moveStage === "cards" ? "Watch closely — cards shuffling"
+                    : moveStage === "backs" ? "Now the card backs are moving"
+                    : "Sweeping into position"
                 : (text.memoryPick ?? "Pick two cards")}…
             </p>
             {phase === "preview" && (
@@ -316,6 +343,7 @@ export default function Memory() {
                 className={[
                   "mcard",
                   small ? "small" : "",
+                  arcCard ? "arc-card" : "",
                   faceUp(id) ? "face-up" : "",
                   revealed.has(id) ? "matched" : "",
                   phase === "done" && !revealed.has(id) ? "missed" : "",
@@ -327,11 +355,27 @@ export default function Memory() {
                 <span className="mcard-inner">
                   <span
                     className="mcard-face back"
-                    style={{ backgroundImage: "url(/cards/back.png)" }}
+                    style={{ backgroundImage: `url(${backSrc(id)})` }}
                   />
                   <span className="mcard-face front" style={{ backgroundImage: `url(/cards/face-${deck[id]}.png)` }} />
                 </span>
               </button>
+            );
+          })}
+          {floatBacks && identity().map((i) => {
+            const p = place("grid", backPos[i]);
+            return (
+              <span
+                key={`float-${i}`}
+                className="mfloat"
+                style={{
+                  left: p.left,
+                  top: p.top,
+                  zIndex: 20,
+                  transitionDuration: `${cfg.moveMs}ms`,
+                  backgroundImage: `url(/cards/pair-back-${backs[i]}.png)`,
+                }}
+              />
             );
           })}
         </div>
