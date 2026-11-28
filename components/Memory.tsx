@@ -18,7 +18,6 @@ const GATHER_MS = 800;
 const FAN_MS = 900;
 const BACK_STEPS = 4;
 const ARC_W = 8;
-const ARC_H = 16;
 const ARC_STEP = 9.5;
 const ARC_RY = 46;
 const FLIP_GAP_MS = 400;
