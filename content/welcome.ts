@@ -1,6 +1,6 @@
 export const welcome = {
   eyebrow: "Parlamentum · gold only",
-  title: "The House",
+  title: "The Atlantic Casino",
   intro:
     "A player-run dice hall. Deposit in-game gold, roll at published odds, withdraw whenever you like.",
   steps: [
