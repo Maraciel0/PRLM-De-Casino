@@ -39,13 +39,31 @@ const BLURB: Record<Difficulty, string> = {
 const identity = () => Array.from({ length: SIZE }, (_, i) => i);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Small cards (deck pile and arc) are 13% x 34% of the board. Positions are the card's top-left,
+// so subtract half a card to centre things on the board's midpoint.
+const SMALL_W = 13;
+const SMALL_H = 34;
+
 function place(layout: Layout, slot: number) {
+  const mid = (SIZE - 1) / 2;
   if (layout === "deck") {
-    return { left: `${42 + slot * 1.1}%`, top: `${5 + slot * 1.3}%`, zIndex: slot };
+    // A tidy pile centred on the board, fanned a little either side of the middle.
+    return {
+      left: `${(100 - SMALL_W) / 2 + (slot - mid) * 0.5}%`,
+      top: `${(100 - SMALL_H) / 2 + (slot - mid) * 0.6}%`,
+      zIndex: slot,
+    };
   }
   if (layout === "arc") {
+    // Half-circle whose bounding box (card edges included) is centred on the board.
     const t = ((180 + (180 * slot) / (SIZE - 1)) * Math.PI) / 180;
-    return { left: `${50 + 36 * Math.cos(t)}%`, top: `${64 + 30 * Math.sin(t)}%`, zIndex: 1 };
+    const rx = 36;
+    const ry = 30;
+    return {
+      left: `${(100 - SMALL_W) / 2 + rx * Math.cos(t)}%`,
+      top: `${(100 - SMALL_H) / 2 + ry / 2 + ry * Math.sin(t)}%`,
+      zIndex: 1,
+    };
   }
   return { left: `${(slot % 5) * 20 + 1}%`, top: `${Math.floor(slot / 5) * 50 + 2}%`, zIndex: 1 };
 }
