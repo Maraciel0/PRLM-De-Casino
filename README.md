@@ -32,6 +32,13 @@ opening the tables. Default is 500 gold bankroll.
 
 ## Not built yet
 
-- Dice is the only game. Coin flip and wheel are the next two.
+- Games live: dice, memory (three difficulty tiers) and blackjack. Coin flip and wheel are next.
 - The link handshake is trust-based (no profile scrape). Add one in `link/verify` when volume justifies it.
 - Rate limiting is per-instance. Move to Upstash before you promote publicly.
+
+## Blackjack
+
+Table rules: 6 decks, dealer stands on all 17s, blackjack pays 3:2, double on any two cards, no split, insurance or surrender.
+The shoe is shuffled from the player's server seed, client seed and nonce (see `lib/blackjack-server.ts`), and only the
+first 52 cards are stored in `blackjack_rounds`. The browser never sees the shoe or the dealer's hole card until the hand ends.
+After pulling this update run `npm run db:push` to create the `blackjack_rounds` table.
