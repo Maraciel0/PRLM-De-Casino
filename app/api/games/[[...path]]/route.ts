@@ -27,6 +27,8 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
       games: [
         { slug: "dice", name: "Dice", live: true },
         { slug: "memory", name: "Memory", live: true },
+        { slug: "blackjack", name: "Blackjack", live: true },
+        { slug: "roulette", name: "Roulette", live: true },
       ],
       paused: s.paused,
     });
