@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <div className="space-y-5">
       <div className="card">
-        <p className="eyebrow">{text.title ?? "The House"}</p>
+        <p className="eyebrow">{text.title ?? "The Atlantic Casino"}</p>
         {user && (
           <p className="mt-1 text-sm text-neutral-400">
             {text.homeGreeting ?? "Playing as"} <span className="text-gold-bright">{user.handle}</span>
