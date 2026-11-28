@@ -188,6 +188,7 @@
   transition-duration: 900ms;
 }
 .mcard.small { width: 13%; height: 34%; }
+.mcard.arc-card { width: 8%; height: 16%; }
 .mfloat {
   position: absolute;
   width: 18%;
@@ -202,6 +203,7 @@
   transition-property: left, top;
   transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
   transition-duration: 900ms;
+}
 .mcard:disabled { opacity: 1; }
 .mcard.playable { cursor: pointer; }
 .mcard-inner {
