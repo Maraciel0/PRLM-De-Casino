@@ -5,7 +5,7 @@ export type Difficulty = "easy" | "normal" | "hard";
 
 export const MEMORY_CARDS = 10;
 export const MEMORY_PAIRS = MEMORY_CARDS / 2;
-export const MEMORY_GUESSES = Math.floor(MEMORY_CARDS * 1.4);
+export const MEMORY_GUESSES = Math.floor(MEMORY_PAIRS * 1.4);
 
 export const DIFFICULTIES: Record<
   Difficulty,
